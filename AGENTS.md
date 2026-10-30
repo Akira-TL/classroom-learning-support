@@ -15,11 +15,11 @@
 
 ### 议题跟踪
 
-项目议题使用本仓库 GitHub Issues，通过 `gh` 操作，仓库从 `origin` 确定。见 `docs/agents/issue-tracker.md`。
+项目议题使用 `.scratch/` 下的本地 Markdown 文件，随 Git 保存；GitHub 用于代码和文档托管。见 `docs/agents/issue-tracker.md`。
 
 ### 工作流角色
 
-采用 Matt 系列技能的默认角色标签，仅创建缺失标签。见 `docs/agents/triage-labels.md`。
+采用默认本地状态与分类值；Wayfinder 使用固定类型和生命周期字段。见 `docs/agents/triage-labels.md`。
 
 ### 领域文档
 

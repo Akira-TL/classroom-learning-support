@@ -1,20 +1,17 @@
-# 工作流角色映射
+# 本地工作流角色映射
 
-采用默认名称。下游技能必须读取本表；仅创建缺失标签，保留已有标签配置。
+本兼容路径保存本地 Markdown 的状态与分类值，不对应 GitHub 标签。
 
-| 角色 | GitHub 标签 | 使用方 | 含义 |
-|---|---|---|---|
-| ready-for-agent | ready-for-agent | to-tickets、triage | 规格明确，可进入实现 |
-| bug | bug | triage | 缺陷 |
-| enhancement | enhancement | triage | 功能或改进 |
-| needs-triage | needs-triage | triage | 待分诊 |
-| needs-info | needs-info | triage | 待补充信息 |
-| ready-for-human | ready-for-human | triage | 需要人工判断或操作 |
-| wontfix | wontfix | triage | 不处理 |
-| wayfinder:map | wayfinder:map | wayfinder | 决策规划图 |
-| wayfinder:research | wayfinder:research | wayfinder | 事实研究 |
-| wayfinder:prototype | wayfinder:prototype | wayfinder | 原型验证决策 |
-| wayfinder:grilling | wayfinder:grilling | wayfinder | 人工讨论决策 |
-| wayfinder:task | wayfinder:task | wayfinder | 决策所需准备任务 |
+| 角色 | 本地字段和值 | 使用方 |
+|---|---|---|
+| ready-for-agent | Status: ready-for-agent | to-tickets、triage |
+| bug | Category: bug | triage |
+| enhancement | Category: enhancement | triage |
+| needs-triage | Status: needs-triage | triage |
+| needs-info | Status: needs-info | triage |
+| ready-for-human | Status: ready-for-human | triage |
+| wontfix | Status: wontfix | triage |
 
-规划图和决策议题不得仅因已经创建就标为 `ready-for-agent`。实现任务在规格明确后另行拆解。
+Wayfinder 使用固定 Type: research、prototype、grilling、task，以及 Status: open、claimed、resolved，不经过 wayfinder 标签映射。
+
+规划图及决策议题不自动标为 ready-for-agent；实现任务须在规格明确后另行拆解。

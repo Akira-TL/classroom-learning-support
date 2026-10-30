@@ -14,11 +14,11 @@
 - [上游接入边界研究](docs/research/上游语音能力接入边界.md)
 - [领域词汇](CONTEXT.md)
 
-原始 PRD 保持原文。当前产品边界以 MVP PRD 中已确认事项为准，未决定的技术选择通过 GitHub 决策议题推进。
+原始 PRD 保持原文。当前产品边界以 MVP PRD 中已确认事项为准，未决定的技术选择通过[本地决策规划图](.scratch/mvp/map.md)推进。
 
 ## 协作
 
-议题采用 GitHub Issues。`wayfinder` 用于梳理决策，不把尚未解决的技术选择直接当作实现任务。配置见 [议题规则](docs/agents/issue-tracker.md)与[角色标签](docs/agents/triage-labels.md)。
+公开仓库：[Akira-TL/classroom-learning-support](https://github.com/Akira-TL/classroom-learning-support)。议题采用 `.scratch/` 下的 Markdown 文件，随 Git 管理。`wayfinder` 用于梳理决策，不把尚未解决的技术选择直接当作实现任务。配置见[议题规则](docs/agents/issue-tracker.md)与[角色映射](docs/agents/triage-labels.md)。
 
 安装本项目工程技能：
 
