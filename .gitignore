@@ -1,0 +1,24 @@
+# 本机技能投影、运行日志与私有配置
+.agents/skills/
+logs/
+.env
+.env.*
+!.env.example
+.venv/
+__pycache__/
+node_modules/
+.next/
+dist/
+coverage/
+# 原始录音、学生数据与模型权重不进入公开仓库
+data/private/
+data/audio/
+models/
+*.wav
+*.mp3
+*.flac
+*.m4a
+*.pt
+*.pth
+*.onnx
+*.safetensors
