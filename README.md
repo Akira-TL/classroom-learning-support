@@ -1,0 +1,30 @@
+# 声音驱动的课堂学习支持系统
+
+从课堂发言中形成可核查的学习证据，经教师确认后生成练习、提问安排与下一课教学调整。
+
+当前仓库处于产品与技术规划阶段，尚未实现应用。语音位置识别和语音转文字由独立模块提供；本仓库负责接入、教学应用和角色反馈。
+
+## 文档入口
+
+- [原始 PRD V1.0](docs/product/声音驱动的课堂学习支持系统_PRD_V1.0.md)
+- [MVP PRD](docs/product/MVP_PRD.md)
+- [技术路线](docs/planning/技术路线.md)
+- [演示方案](docs/planning/演示方案.md)
+- [语音模块对接契约](docs/integration/语音模块对接契约.md)
+- [上游接入边界研究](docs/research/上游语音能力接入边界.md)
+- [领域词汇](CONTEXT.md)
+
+原始 PRD 保持原文。当前产品边界以 MVP PRD 中已确认事项为准，未决定的技术选择通过 GitHub 决策议题推进。
+
+## 协作
+
+议题采用 GitHub Issues。`wayfinder` 用于梳理决策，不把尚未解决的技术选择直接当作实现任务。配置见 [议题规则](docs/agents/issue-tracker.md)与[角色标签](docs/agents/triage-labels.md)。
+
+安装本项目工程技能：
+
+```text
+skiloom install akira-tl/matt-skills/ask-akira --git main --scope workspace --plan --json
+skiloom install akira-tl/matt-skills/ask-akira --git main --scope workspace --yes --json
+```
+
+已接受的技能状态由 Skiloom 管理。本机技能投影、运行日志、音频、模型权重和凭证不进入公开仓库。仓库公开不代表已有许可授权；本阶段不自动添加许可证。
