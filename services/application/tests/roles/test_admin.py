@@ -112,6 +112,12 @@ def test_role_authorization_empty_state_and_fixed_scope(overview: Overview) -> N
     assert result.hidden is False
     assert result.confirmed_evidence_count is result.observed_student_count is None
     assert result.adopted_plan_count == result.adopted_exercise_count == result.observation_count == 0
+    assert result.plan_metrics.generated_count == result.exercise_metrics.generated_count == 0
+    assert result.plan_metrics.confirmation_rate.denominator == 0
+    assert result.plan_metrics.confirmation_rate.ratio is None
+    assert result.manual_exercise_metrics.recorded_count == 0
+    assert result.time_scope == "current_retained_state"
+    assert result.snapshot_at.tzinfo is not None
     assert client.get("/api/admin/summary?teacher_id=teacher-02").status_code == 422
 
 
@@ -192,12 +198,17 @@ def test_adoption_retraction_and_immediate_invalid_basis(overview: Overview, con
     client.put(f"{prefix}/exercises/{exercise.id}/adoption", json={"expected_revision": 2, "adopted": True})
     summary = overview.summary()
     assert summary.adopted_plan_count == summary.adopted_exercise_count == summary.observation_count == 1
-    assert [item.count for item in summary.resource_needs] == [1, 1]
+    assert [item.count for item in summary.resource_needs] == [1, 1, 0]
+    assert summary.plan_metrics.generated_count == summary.plan_metrics.confirmed_count == 1
+    assert summary.plan_metrics.adoption_rate.ratio == 1
     overview.login("teacher-01")
     client.put(f"{prefix}/plans/{plan.id}/adoption", json={"expected_revision": 3, "adopted": False})
     summary = overview.summary()
     assert summary.adopted_plan_count == summary.observation_count == 0
     assert summary.adopted_exercise_count == 1
+    assert summary.plan_metrics.generated_count == summary.plan_metrics.confirmed_count == 1
+    assert summary.plan_metrics.adoption_rate.denominator == 1
+    assert summary.plan_metrics.adoption_rate.ratio == 0
     overview.login("teacher-01")
     overview.env.speech.review(
         overview.env.cid,
@@ -216,4 +227,6 @@ def test_adoption_retraction_and_immediate_invalid_basis(overview: Overview, con
     summary = overview.summary()
     assert summary.adopted_plan_count == summary.adopted_exercise_count == summary.observation_count == 0
     assert summary.performance_state == "no_data"
-    assert [item.count for item in summary.resource_needs] == [0, 0]
+    assert [item.count for item in summary.resource_needs] == [0, 0, 0]
+    assert summary.plan_metrics.generated_count == summary.exercise_metrics.generated_count == 0
+    assert summary.plan_metrics.adoption_rate.ratio is None
