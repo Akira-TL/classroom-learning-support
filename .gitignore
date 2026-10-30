@@ -15,6 +15,7 @@ dist/
 coverage/
 .pytest_cache/
 *.tsbuildinfo
+web/public/audio-worklet/
 # 原始录音、学生数据与模型权重不进入公开仓库
 data/private/
 data/audio/

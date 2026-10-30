@@ -4,6 +4,8 @@ from .models import Resource
 
 DIRECT_TABLES = (
     "audio_assets",
+    "input_frames",
+    "input_sessions",
     "speech_events",
     "utterances",
     "speech_reviews",

@@ -34,7 +34,9 @@ class AudioStore:
                 "PRIMARY KEY(classroom_id, session_id))"
             )
 
-    def save(self, classroom_id: str, session_id: str, content: bytes) -> AudioAsset:
+    def save(
+        self, classroom_id: str, session_id: str, content: bytes, *, source: str = "teacher_uploaded_audio"
+    ) -> AudioAsset:
         if not content or len(content) > self.max_bytes:
             raise StoreError(413, "音频为空或超过20MB")
         try:
@@ -50,7 +52,12 @@ class AudioStore:
         except (wave.Error, EOFError, ZeroDivisionError):
             raise StoreError(422, "音频不是有效的PCM WAV") from None
         asset = AudioAsset(
-            id=uuid4().hex, session_id=session_id, duration_ms=duration, channels=channels, sample_rate=rate
+            id=uuid4().hex,
+            session_id=session_id,
+            duration_ms=duration,
+            channels=channels,
+            sample_rate=rate,
+            source=source,
         )
         path = self.root / f"{asset.id}.wav"
         with closing(sqlite3.connect(self.database_path, timeout=10)) as db, db:

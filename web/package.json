@@ -4,8 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev --hostname 127.0.0.1",
-    "build": "next build",
+    "build:worklet": "tsc --project worklet/tsconfig.json",
+    "dev": "npm run build:worklet && next dev --hostname 127.0.0.1",
+    "build": "npm run build:worklet && next build",
     "start": "next start --hostname 127.0.0.1",
     "typecheck": "tsc --noEmit"
   },
