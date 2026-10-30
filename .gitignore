@@ -2,6 +2,8 @@
 .agents/skills/
 logs/
 .env
+# 比赛资料仅供本机参考，不进入版本控制
+data/competition/
 .env.*
 !.env.example
 .venv/
