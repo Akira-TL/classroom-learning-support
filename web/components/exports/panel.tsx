@@ -1,9 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { PlanRecord } from "../../lib/plans";
 import { downloadUrl, exportsApi, exportStatus, previewHtml, statusUrl } from "../../lib/exports/api";
 import type { CreateExport, ExportMetadata } from "../../lib/exports/api";
+import { ExportRequests, mergeExportList, preferExport } from "../../lib/exports/coordination";
+import type { RequestToken } from "../../lib/exports/coordination";
 import { reportsApi } from "../../lib/reports";
 import type { ParentReport } from "../../lib/reports";
 
@@ -11,102 +13,126 @@ export function ExportPanel({ classroomId, plan }: { classroomId: string; plan: 
   const [reports, setReports] = useState<ParentReport[]>([]);
   const [exports, setExports] = useState<ExportMetadata[]>([]);
   const [parentId, setParentId] = useState("");
-  const [attempt, setAttempt] = useState<CreateExport | null>(null);
-  const [busy, setBusy] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [attempt, setAttempt] = useState<{ classroomId: string; body: CreateExport } | null>(null);
+  const [pending, setPending] = useState(0);
+  const [verified, setVerified] = useState<RequestToken | null>(null);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const requests = useRef(new ExportRequests());
+  const context = JSON.stringify([classroomId, plan.id, plan.revision, plan.status]);
+  const latestContext = useRef(context);
+  latestContext.current = context;
+  const trusted = verified !== null && requests.current.current(verified, context);
+  const busy = pending > 0;
   const candidates = reports.filter((report) => report.status === "published"
     && report.student_id === plan.content.target_student);
+  const selectedAvailable = !parentId || candidates.some((item) => item.id === parentId);
 
-  async function load() {
-    setLoading(true);
-    try {
-      const [parentReports, metadata] = await Promise.all([reportsApi.list(classroomId), exportsApi.list(classroomId)]);
-      setReports(parentReports); setExports(metadata);
-    } catch (failure) {
-      setError(failure instanceof Error ? failure.message : "报告状态读取失败。");
-    } finally { setLoading(false); }
+  function begin() {
+    const token = requests.current.begin(context);
+    setPending(requests.current.count()); setVerified(null); setError(""); setNotice("");
+    return token;
   }
-
+  function current(token: RequestToken) { return requests.current.current(token, latestContext.current); }
+  function finish(token: RequestToken) {
+    requests.current.finish(token); setPending(requests.current.count());
+  }
+  function fail(token: RequestToken, cause: unknown) {
+    if (current(token)) { setVerified(null); setError(cause instanceof Error ? cause.message : "报告状态未核实"); }
+  }
+  async function read(token: RequestToken) {
+    const [parentReports, metadata] = await Promise.all([reportsApi.list(classroomId), exportsApi.list(classroomId)]);
+    if (!current(token)) return;
+    setReports(parentReports);
+    setExports((previous) => mergeExportList(previous, metadata)); setVerified(token);
+  }
+  async function load() {
+    const token = begin();
+    try { await read(token); } catch (cause: unknown) { fail(token, cause); } finally { finish(token); }
+  }
   useEffect(() => {
-    setAttempt(null); setParentId(""); setReports([]); setExports([]);
-    let active = true;
-    setLoading(true);
-    Promise.all([reportsApi.list(classroomId), exportsApi.list(classroomId)]).then(([parentReports, metadata]) => {
-      if (active) { setReports(parentReports); setExports(metadata); }
-    }).catch((failure: unknown) => {
-      if (active) setError(failure instanceof Error ? failure.message : "报告读取失败。");
-    }).finally(() => { if (active) setLoading(false); });
-    return () => { active = false; };
-  }, [classroomId, plan.id, plan.revision, plan.status]);
+    void load();
+    return () => { requests.current.cancel(); };
+  }, [context]);
 
   async function create() {
+    if (!trusted || busy || attempt && attempt.classroomId !== classroomId) return;
     const parent = candidates.find((report) => report.id === parentId);
-    if (parentId && !parent) { setError("所选家长报告已不可用，请刷新后重新选择。"); return; }
-    const body = attempt ?? {
+    if (!attempt && parentId && !parent) { setError("所选家长报告已不可用，请核对后重新选择。"); return; }
+    const snapshot = attempt ?? { classroomId, body: {
       plan_id: plan.id, expected_plan_revision: plan.revision,
       parent_report_id: parent?.id ?? null, expected_parent_revision: parent?.revision ?? null,
       idempotency_key: crypto.randomUUID(),
-    };
-    setAttempt(body); setBusy(true); setError(""); setNotice("");
+    } };
+    setAttempt(snapshot);
+    const token = begin();
     try {
-      const metadata = await exportsApi.create(classroomId, body);
-      setNotice(`报告创建请求已确认：${exportStatus[metadata.status]}，版本 ${metadata.revision}。`);
-      await load();
-    } catch (failure) { setError(failure instanceof Error ? failure.message : "未确认创建成功，可重试同一次请求。"); }
-    finally { setBusy(false); }
+      const result = await exportsApi.create(snapshot.classroomId, snapshot.body);
+      if (!current(token)) return;
+      setExports((previous) => [...previous.filter((item) => item.id !== result.id),
+        preferExport(previous.find((item) => item.id === result.id), result)]);
+      setNotice(`已收到报告创建返回，版本 ${result.revision}；有效状态以重新核实后的列表为准。`);
+      await read(token);
+    } catch (cause: unknown) { fail(token, cause); } finally { finish(token); }
   }
-
   async function revoke(metadata: ExportMetadata) {
-    setBusy(true); setError("");
-    try { await exportsApi.revoke(classroomId, metadata); setNotice("受控报告入口已撤回。"); await load(); }
-    catch (failure) { setError(failure instanceof Error ? failure.message : "撤回未确认成功，请刷新核对。"); }
-    finally { setBusy(false); }
-  }
-
-  async function preview(metadata: ExportMetadata) {
-    setBusy(true); setError("");
+    if (!trusted || busy) return;
+    const token = begin();
     try {
-      const url = await previewHtml(metadata.id);
+      const result = await exportsApi.revoke(classroomId, metadata);
+      if (!current(token)) return;
+      setExports((previous) => previous.map((item) => item.id === result.id ? preferExport(item, result) : item));
+      setNotice("受控报告入口已撤回。"); await read(token);
+    } catch (cause: unknown) { fail(token, cause); } finally { finish(token); }
+  }
+  async function preview(metadata: ExportMetadata) {
+    if (!trusted || busy) return;
+    const token = begin();
+    let url: string | null = null;
+    try {
+      url = await previewHtml(metadata.id);
+      if (!current(token)) { URL.revokeObjectURL(url); return; }
       window.open(url, "_blank", "noopener,noreferrer");
-      window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
-      setNotice("已请求在新窗口预览；若浏览器拦截了弹窗，可使用受控下载链接。");
-    } catch (failure) { setError(failure instanceof Error ? failure.message : "预览失败。"); }
-    finally { setBusy(false); }
+      const opened = url; window.setTimeout(() => URL.revokeObjectURL(opened), 60_000);
+      setNotice("已请求新窗口预览；拦截时可使用受控下载链接。"); await read(token);
+    } catch (cause: unknown) { if (url) URL.revokeObjectURL(url); fail(token, cause); }
+    finally { finish(token); }
   }
 
   return <section aria-label="教师报告导出">
     <h4>导出教师教学支持报告</h4>
-    <p>仅根据当前已确认教学安排创建静态 HTML 报告，不调用模型。点击创建前请核对证据和题目。</p>
+    <p>仅根据当前已确认教学安排创建静态 HTML 报告，不调用模型。来源变化后须重新核实。</p>
+    {!trusted && <p role="status">当前来源或报告状态待核实，暂不提供有效报告操作。</p>}
     {plan.status !== "confirmed" && <p>当前教学安排尚未确认或已过期，不能创建正式报告。</p>}
-    {error && <p role="alert">{error}</p>}
-    <p role="status">{loading ? "正在读取报告状态…" : notice}</p>
-    <label>可选附加同学生的家长报告<select value={parentId} disabled={busy || loading}
-      onChange={(event) => { setParentId(event.target.value); setAttempt(null); setNotice(""); }}>
+    {error && <p role="alert">{error} 原选择和创建请求已保留，请刷新核对后重试。</p>}
+    <p role="status">{busy ? "正在核对或处理报告请求…" : notice}</p>
+    <label>可选附加同学生的家长报告<select value={parentId} disabled={busy || !trusted}
+      onChange={(event) => { setParentId(event.target.value); setNotice(""); }}>
       <option value="">不附加家长报告</option>
+      {!selectedAvailable && <option value={parentId}>原选择待核实或已失效：{parentId}</option>}
       {candidates.map((report) => <option key={report.id} value={report.id}>
-        {report.student_id} · 家长报告 {report.id} · 版本 {report.revision}
-      </option>)}
+        {report.student_id} · 家长报告 {report.id} · 版本 {report.revision}</option>)}
     </select></label>
-    <button type="button" disabled={busy || loading || plan.status !== "confirmed"} onClick={() => void create()}>
-      {attempt ? "重试同一次报告创建请求" : "创建教师报告"}
-    </button>
+    {attempt && <p>保留请求：课堂 {attempt.classroomId}，计划 {attempt.body.plan_id}，
+      版本 {attempt.body.expected_plan_revision}。重试使用原参数；使用新选择请明确准备新请求。</p>}
+    <button type="button" disabled={busy || !trusted || plan.status !== "confirmed"
+      || Boolean(attempt && attempt.classroomId !== classroomId)} onClick={() => void create()}>
+      {attempt ? "重试同一次报告创建请求" : "创建教师报告"}</button>
     {attempt && <button type="button" disabled={busy} onClick={() => {
-      setAttempt(null); setNotice("已准备新请求，下次点击创建才会生成新报告。");
+      setAttempt(null); setNotice("已准备新请求，下次点击创建才会使用当前选择。");
     }}>准备创建另一份报告</button>}
-    <button type="button" disabled={busy || loading} onClick={() => void load()}>刷新报告与有效状态</button>
-    {!loading && exports.length === 0 && <p>本课堂尚无教师导出报告。</p>}
+    <button type="button" disabled={busy} onClick={() => void load()}>刷新报告与有效状态</button>
+    {trusted && exports.length === 0 && <p>本课堂尚无教师导出报告。</p>}
     {exports.map((metadata) => <article key={metadata.id}>
-      <p>报告 {metadata.id}：{exportStatus[metadata.status]} · 版本 {metadata.revision}
+      <p>报告 {metadata.id}：{trusted ? exportStatus[metadata.status] : "状态待重新核实"} · 版本 {metadata.revision}
         · {new Date(metadata.created_at).toLocaleString("zh-CN")}</p>
       <a href={statusUrl(metadata.id)} target="_blank" rel="noopener noreferrer">查询状态（仅元数据）</a>
-      {metadata.status === "active" && <>
-        <button type="button" disabled={busy} onClick={() => void preview(metadata)}>预览静态报告</button>
+      {trusted && !busy && metadata.status === "active" && <>
+        <button type="button" onClick={() => void preview(metadata)}>预览静态报告</button>
         <a href={downloadUrl(metadata.id)}>下载教师 HTML 报告</a>
-        <button type="button" disabled={busy} onClick={() => void revoke(metadata)}>撤回此报告</button>
+        <button type="button" onClick={() => void revoke(metadata)}>撤回此报告</button>
       </>}
     </article>)}
-    <p>站内受控入口会检查当前权限与依据；已下载的离线副本不能远程收回，使用前需核对状态。</p>
+    <p>受控入口会检查当前权限与依据；已下载的离线副本不能远程收回，请核对状态。</p>
   </section>;
 }
