@@ -7,10 +7,11 @@ import { QuestionDiagram } from "../components/diagrams/question";
 import { SpeechPanel } from "../components/speech-panel";
 import { StudentReader } from "../components/students/reader";
 import { StudentFeedbackQueue } from "../components/students/feedback-queue";
-import { ManualExercises } from "../components/manual-exercises/panel";
-import { AdminOverview } from "../components/overview/panel";
 import { ParentReader } from "../components/reports/parent-reader";
+import { AdminOverview } from "../components/overview/panel";
 import { InputPanel } from "../components/inputs/panel";
+import { ManualExercises } from "../components/manual-exercises/panel";
+import { DeletionPanel } from "../components/deletion/panel";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -79,6 +80,12 @@ export default function Home() {
     setSelected(classroom); setFormOpen(true); setFormKey((value) => value + 1);
   }
 
+  async function removed() {
+    setSelected(null); setFormOpen(false);
+    setClassrooms(await api.classrooms());
+    setNotice("课堂已移除，受控入口已关闭；清除任务结果请在删除区域查看。");
+  }
+
   return <main>
     <h1>课堂学习支持 · 功能验证</h1>
     <p className="notice">当前页面验证功能与数据，尚不是最终视觉方案。三版效果图将在功能阶段后提供选择。</p>
@@ -94,9 +101,8 @@ export default function Home() {
         setNotice("已退出登录。");
       })}>退出登录</button>
       {user.role === "student" ? <StudentReader key={user.id} />
-        : user.role === "admin" ? <AdminOverview key={user.id} />
         : user.role === "parent" ? <ParentReader key={user.id} />
-        : user.role !== "teacher" ? <p>此功能验证入口目前仅提供教师课堂管理；当前账号没有教师权限。</p> : <>
+        : user.role === "admin" ? <AdminOverview key={user.id} /> : <>
         <h2>授权课堂</h2>
         <button disabled={busy} onClick={() => openForm(null)}>创建课堂</button>
         <button disabled={busy} onClick={() => void perform(async () => {
@@ -129,6 +135,7 @@ export default function Home() {
           <SpeechPanel key={`speech/${user.id}/${selected.id}`} classroom={selected} />
           <StudentFeedbackQueue key={`feedback/${user.id}/${selected.id}`} classroomId={selected.id} />
         </section>}
+        <DeletionPanel key={user.id} classroom={selected} onRemoved={removed} />
       </>}
     </>}
   </main>;
