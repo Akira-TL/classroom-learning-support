@@ -6,6 +6,7 @@ import type { EvidenceRecord } from "../../lib/evidence";
 import { mergePlans, plansApi } from "../../lib/plans";
 import type { GeneratePlan, PlanRecord, PlanResult } from "../../lib/plans";
 import { PlanReview } from "./review";
+import { ExportPanel } from "../exports/panel";
 
 export function PlanPanel({ classroomId, evidence }: { classroomId: string; evidence: EvidenceRecord }) {
   const [results, setResults] = useState<PlanResult[]>([]);
@@ -80,7 +81,10 @@ export function PlanPanel({ classroomId, evidence }: { classroomId: string; evid
       <p>安排任务 {result.task.id}：{taskNames[result.task.status]}；依据证据版本 {result.task.basis.revision}</p>
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <p>过期返回已丢弃，仅留审计记录，未采用为有效教学安排。</p>}
-      {result.plan ? <PlanReview classroomId={classroomId} record={result.plan} onSaved={updateRecord} />
+      {result.plan ? <>
+        <PlanReview classroomId={classroomId} record={result.plan} onSaved={updateRecord} />
+        <ExportPanel classroomId={classroomId} plan={result.plan} />
+      </>
         : <p>此任务没有可供教师核验的教学安排。</p>}
     </article>)}
   </section>;
