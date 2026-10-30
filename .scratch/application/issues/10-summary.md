@@ -5,8 +5,8 @@
 **What to build:** 管理者看到授权课堂的教学支持采用情况与资源需求汇总，不读取学生个人证据或音频。
 
 Blocked by: 06
-Status: ready-for-agent
-Claimed by: none
+Status: claimed
+Claimed by: /root
 
 前置决策：[汇总范围与最小样本规则](../../mvp/issues/05-access.md)。阈值未确认前不展示敏感分组。
 

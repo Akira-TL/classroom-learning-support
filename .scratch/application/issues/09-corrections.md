@@ -5,8 +5,8 @@
 **What to build:** 教师处理纠错，将发言从学生甲改为乙或修改题目、文字后，所有相关证据、建议和报告正确失效，再核验和发布新版。
 
 Blocked by: 06, 07, 08
-Status: ready-for-agent
-Claimed by: none
+Status: claimed
+Claimed by: /root
 
 - [ ] 显示纠错影响范围及关联依据；甲和乙的个人内容均按实际依赖失效，无关记录保持有效。
 - [ ] 关联证据与建议需重新核验；已发布旧报告立即停止提供，不能等待后台重生成才撤回。
