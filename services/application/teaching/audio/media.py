@@ -55,6 +55,8 @@ class AudioStore:
         path = self.root / f"{asset.id}.wav"
         with closing(sqlite3.connect(self.database_path, timeout=10)) as db, db:
             db.execute("BEGIN IMMEDIATE")
+            if not db.execute("SELECT 1 FROM classrooms WHERE id=?", (classroom_id,)).fetchone():
+                raise StoreError(410, "课堂已删除，音频未归档")
             if db.execute(
                 "SELECT 1 FROM audio_assets WHERE classroom_id=? AND session_id=?", (classroom_id, session_id)
             ).fetchone():

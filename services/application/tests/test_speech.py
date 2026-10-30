@@ -8,6 +8,8 @@ from teaching.audio.models import ReviewRequest, SpeechEvent
 from teaching.audio.store import SpeechConflict, SpeechStore
 from teaching.classroom.classrooms import CreateClassroom, Question
 from teaching.classroom.storage import SQLiteStore, StoreError
+from teaching.deletion.models import DeleteClassroom
+from teaching.deletion.store import DeletionStore
 
 
 @pytest.fixture
@@ -142,3 +144,26 @@ def test_no_classroom_table_never_allows_writes(tmp_path: Path) -> None:
     assert speech.events("missing") == []
 
 
+def test_deleted_classroom_cannot_be_recreated_by_late_speech(classroom: tuple[SpeechStore, str]) -> None:
+    speech, cid = classroom
+    speech.receive(cid, event())
+    classrooms = SQLiteStore(speech.path)
+    # 授权检查成功之后发生删除，模拟接收请求在取得写事务前被延迟。
+    current = classrooms.get_classroom("teacher-01", cid)
+    DeletionStore(classrooms).create(
+        cid,
+        "teacher-01",
+        DeleteClassroom(
+            expected_revision=current.revision,
+            confirmation=current.title,
+            idempotency_key="speech-delete-race",
+        ),
+    )
+    with pytest.raises(StoreError) as error:
+        speech.receive(cid, event("late-event", 2))
+    assert error.value.status == 410
+    with pytest.raises(StoreError) as error:
+        speech.review(cid, "s1", "u1", "teacher-01", review())
+    assert error.value.status == 410
+    assert speech.events(cid) == []
+    assert speech.timeline(cid) == []

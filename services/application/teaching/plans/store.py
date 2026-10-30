@@ -115,6 +115,8 @@ class PlanStore:
             failure = str(error)
         with self.store.connection() as db:
             db.execute("BEGIN IMMEDIATE")
+            if not db.execute("SELECT 1 FROM classrooms WHERE id=?", (cid,)).fetchone():
+                raise StoreError(410, "课堂已删除，迟到生成结果已丢弃")
             if not self._current(db, task, teacher):
                 task = task.model_copy(
                     update={

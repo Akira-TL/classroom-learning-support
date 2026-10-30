@@ -13,6 +13,7 @@ from .classroom.auth import COOKIE_NAME, AuthSettings, DemoAuth, LoginRequest, U
 from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
 from .corrections.api import corrections_router
+from .deletion.api import deletion_router
 from .exercises.api import exercises_router
 from .exports.api import exports_router
 from .learning.api import learning_router
@@ -38,6 +39,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app.include_router(students_router(store))
     app.include_router(exports_router(store))
     app.include_router(corrections_router(store, speech))
+    app.include_router(deletion_router(store))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
