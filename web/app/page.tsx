@@ -5,6 +5,8 @@ import { ClassroomForm } from "../components/classroom-form";
 import { LoginForm } from "../components/login-form";
 import { QuestionDiagram } from "../components/diagrams/question";
 import { SpeechPanel } from "../components/speech-panel";
+import { StudentReader } from "../components/students/reader";
+import { StudentFeedbackQueue } from "../components/students/feedback-queue";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -87,7 +89,8 @@ export default function Home() {
         await api.logout(); setUser(null); setClassrooms([]); setSelected(null); setFormOpen(false);
         setNotice("已退出登录。");
       })}>退出登录</button>
-      {user.role !== "teacher" ? <p>此功能验证入口目前仅提供教师课堂管理；当前账号没有教师权限。</p> : <>
+      {user.role === "student" ? <StudentReader key={user.id} />
+        : user.role !== "teacher" ? <p>此功能验证入口目前仅提供教师课堂管理；当前账号没有教师权限。</p> : <>
         <h2>授权课堂</h2>
         <button disabled={busy} onClick={() => openForm(null)}>创建课堂</button>
         <button disabled={busy} onClick={() => void perform(async () => {
@@ -115,7 +118,8 @@ export default function Home() {
             {question.diagram_required && !question.diagram_description && <p>需要补充图形，当前不能据此分析。</p>}
           </article>)}
           <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
-          <SpeechPanel key={selected.id} classroom={selected} />
+          <SpeechPanel key={`${user.id}/${selected.id}`} classroom={selected} />
+          <StudentFeedbackQueue key={`${user.id}/${selected.id}`} classroomId={selected.id} />
         </section>}
       </>}
     </>}

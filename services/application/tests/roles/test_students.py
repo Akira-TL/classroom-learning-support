@@ -10,6 +10,7 @@ from test_exercises import ready as ready
 
 from teaching.exercises.models import ExerciseGenerationResult, ExerciseRecord
 from teaching.students.models import FeedbackRecord, ReportPreview, ReportSummary, ReportView, StudentPublish
+from teaching.students.store import FeedbackSource
 
 
 @dataclass
@@ -194,3 +195,34 @@ def test_feedback_queue_and_revoke_preserve_prior_feedback(reports: Reports) -> 
         ).status_code
         == 410
     )
+
+
+def test_feedback_source_is_authorized_and_tracks_current_identity(reports: Reports) -> None:
+    reports.confirm()
+    report = reports.publish()
+    reports.login("student-01")
+    client = reports.ready.env.client
+    feedback = FeedbackRecord.model_validate_json(
+        client.post(
+            f"/api/student-reports/{report.id}/feedback",
+            json={
+                "kind": "correction",
+                "text": "请核对归属",
+                "idempotency_key": "feedback-source-01",
+            },
+        ).content
+    )
+    url = f"/api/classrooms/{reports.ready.env.cid}/student-feedback/{feedback.id}/source"
+    assert client.get(url).status_code == 403
+    reports.login("teacher-02")
+    assert client.get(url).status_code == 403
+    reports.login("teacher-01")
+    initial = FeedbackSource.model_validate_json(client.get(url).content)
+    assert initial.session_id == "s-1" and initial.segment_id == "u-1"
+    assert initial.original_report_revision == 1 and initial.current_utterance_version == 2
+    reports.ready.env.verify(2, "student-02")
+    response = client.get(url)
+    source = FeedbackSource.model_validate_json(response.content)
+    assert source.original_student_id == "student-01" and source.current_student_alias == "student-02"
+    assert source.current_utterance_version == 3
+    assert "分成四块" not in response.text and "audio" not in response.text

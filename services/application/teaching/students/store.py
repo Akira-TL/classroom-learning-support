@@ -1,9 +1,22 @@
 import sqlite3
 
+from ..audio.models import Utterance
 from ..classroom.storage import SQLiteStore, StoreError
 from ..exercises.models import ExerciseRecord
+from ..learning.models import EvidenceRecord
 from ..learning.store import EvidenceStore
-from .models import ReportRecord, ReportSummary, ReportView, StudentPublishPreview
+from ..models import StrictModel
+from .models import FeedbackRecord, ReportRecord, ReportSummary, ReportView, StudentPublishPreview
+
+
+class FeedbackSource(StrictModel):
+    original_report_revision: int
+    session_id: str
+    segment_id: str
+    current_utterance_version: int
+    original_student_id: str
+    current_student_alias: str | None
+    current_question_id: str | None
 
 
 class StudentStore:
@@ -114,3 +127,44 @@ class StudentStore:
             db.execute("BEGIN IMMEDIATE")
             rows = db.execute("SELECT body FROM student_reports WHERE classroom_id=? ORDER BY rowid", (cid,)).fetchall()
             return [self.summary(self.refresh(db, ReportRecord.model_validate_json(row[0]))) for row in rows]
+
+    def feedback_source(self, cid: str, teacher: str, feedback_id: str) -> FeedbackSource:
+        self.store.get_classroom(teacher, cid)
+        with self.store.connection() as db:
+            row = db.execute(
+                "SELECT report_id,student_id,body FROM student_feedback WHERE id=? AND classroom_id=?",
+                (feedback_id, cid),
+            ).fetchone()
+            if not row:
+                raise StoreError(404, "反馈不存在")
+            feedback = FeedbackRecord.model_validate_json(row[2])
+            report = self.record(db, row[0])
+            row = db.execute(
+                "SELECT body FROM exercise_sets WHERE id=? AND classroom_id=?", (report.exercise_set_id, cid)
+            ).fetchone()
+            if not row:
+                raise StoreError(404, "原练习来源不存在")
+            exercise = ExerciseRecord.model_validate_json(row[0])
+            row = db.execute(
+                "SELECT body FROM evidence_records WHERE id=? AND classroom_id=?", (exercise.evidence_id, cid)
+            ).fetchone()
+            if not row:
+                raise StoreError(404, "原学习证据来源不存在")
+            evidence = EvidenceRecord.model_validate_json(row[0])
+            basis = evidence.basis
+            row = db.execute(
+                "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?",
+                (cid, basis.session_id, basis.segment_id),
+            ).fetchone()
+            if not row:
+                raise StoreError(404, "原发言片段不存在")
+            current = Utterance.model_validate_json(row[0])
+            return FeedbackSource(
+                original_report_revision=feedback.report_revision,
+                session_id=basis.session_id,
+                segment_id=basis.segment_id,
+                current_utterance_version=current.version,
+                original_student_id=feedback.student_id,
+                current_student_alias=current.student_alias,
+                current_question_id=current.question_id,
+            )

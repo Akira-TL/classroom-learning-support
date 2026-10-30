@@ -78,7 +78,8 @@ export function SpeechPanel({ classroom }: { classroom: Classroom }) {
     <button disabled={busy} onClick={() => void manualRefresh()}>刷新时间线与事件</button>
     <p>进度：{index}/{plan.length}。暂停只控制模拟事件发送，不代表上游服务暂停。</p>
     {timeline.length === 0 && <p>暂无发言片段。</p>}
-    {timeline.map((item) => <article key={`${item.session_id}/${item.segment_id}`}>
+    {timeline.map((item) => <article key={`${item.session_id}/${item.segment_id}`}
+      id={`utterance-${item.session_id}-${item.segment_id}`}>
       <h4>{item.segment_id} · {phaseNames[item.phase]}</h4>
       <p>会话：{item.session_id}</p>
       <p>来源：{sourceNames[item.source_kind]}；匿名声源：{item.source_ref ?? "未提供"}；

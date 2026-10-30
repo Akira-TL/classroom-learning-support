@@ -17,7 +17,7 @@ from .models import (
     StudentPublishPreview,
 )
 from .publish import Publishing
-from .store import StudentStore
+from .store import FeedbackSource, StudentStore
 
 
 def require_student(request: Request) -> User:
@@ -80,5 +80,9 @@ def students_router(classroom_store: SQLiteStore) -> APIRouter:
         cid: str, fid: str, payload: HandleFeedback, user: Annotated[User, Depends(require_teacher)]
     ) -> FeedbackRecord:
         return feedback.handle(cid, user.id, fid, payload)
+
+    @router.get("/classrooms/{cid}/student-feedback/{fid}/source", response_model=FeedbackSource)
+    def source(cid: str, fid: str, user: Annotated[User, Depends(require_teacher)]) -> FeedbackSource:
+        return base.feedback_source(cid, user.id, fid)
 
     return router

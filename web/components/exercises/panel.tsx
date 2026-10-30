@@ -6,6 +6,7 @@ import type { EvidenceRecord } from "../../lib/evidence";
 import { exercisesApi, mergeExercises } from "../../lib/exercises";
 import type { ExerciseRecord, ExerciseResult, GenerateExercises } from "../../lib/exercises";
 import { ExerciseReview } from "./review";
+import { StudentPublishPanel } from "../students/publish-panel";
 
 export function ExercisePanel({ classroomId, evidence }: { classroomId: string; evidence: EvidenceRecord }) {
   const [results, setResults] = useState<ExerciseResult[]>([]);
@@ -84,8 +85,10 @@ export function ExercisePanel({ classroomId, evidence }: { classroomId: string; 
         依据证据版本 {result.task.basis.revision}</p>
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <p>旧返回已丢弃，仅留审计记录，未作为有效练习采用。</p>}
-      {result.exercise_set ? <ExerciseReview classroomId={classroomId} record={result.exercise_set}
-        onSaved={updateRecord} /> : <p>此任务没有可供核验的练习。</p>}
+      {result.exercise_set ? <>
+        <ExerciseReview classroomId={classroomId} record={result.exercise_set} onSaved={updateRecord} />
+        <StudentPublishPanel classroomId={classroomId} exercise={result.exercise_set} />
+      </> : <p>此任务没有可供核验的练习。</p>}
     </article>)}
   </section>;
 }
