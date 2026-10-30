@@ -14,6 +14,7 @@ from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
 from .exercises.api import exercises_router
 from .learning.api import learning_router
+from .plans.api import plans_router
 from .reports.api import reports_router
 
 
@@ -30,6 +31,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app.include_router(learning_router(store, speech))
     app.include_router(exercises_router(store))
     app.include_router(reports_router(store))
+    app.include_router(plans_router(store))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
