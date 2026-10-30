@@ -7,6 +7,8 @@ from fastapi import Depends, FastAPI, Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import RequestResponseEndpoint
 
+from .audio.api import speech_router
+from .audio.store import SpeechStore
 from .classroom.auth import COOKIE_NAME, AuthSettings, DemoAuth, LoginRequest, User, current_user, require_teacher
 from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
@@ -19,6 +21,9 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app = FastAPI(title="课堂学习支持", version="0.1.0")
     app.state.store = store
     app.state.auth = auth
+    speech = SpeechStore(database_path)
+    app.state.speech = speech
+    app.include_router(speech_router(store, speech))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:

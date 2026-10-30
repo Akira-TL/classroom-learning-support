@@ -16,7 +16,7 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(
+export async function request<T>(
   path: string, schema: z.ZodType<T>, method = "GET", body?: string,
 ): Promise<T> {
   let response: Response;

@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ClassroomForm } from "../components/classroom-form";
 import { LoginForm } from "../components/login-form";
+import { SpeechPanel } from "../components/speech-panel";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -112,7 +113,7 @@ export default function Home() {
             {question.diagram_required && !question.diagram_description && <p>需要补充图形，当前不能据此分析。</p>}
           </article>)}
           <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
-          <h3>语音结果与教师核验</h3><p>此区域尚未接入，本页不展示伪造的语音处理成功结果。</p>
+          <SpeechPanel key={selected.id} classroom={selected} />
         </section>}
       </>}
     </>}
