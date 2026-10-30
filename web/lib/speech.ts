@@ -25,12 +25,22 @@ export const utteranceSchema = z.object({
 export type SpeechEvent = z.infer<typeof speechEventSchema>;
 export type Utterance = z.infer<typeof utteranceSchema>;
 export type ReviewState = z.infer<typeof reviewStateSchema>;
+export interface ReviewRequest {
+  expected_version: number; teacher_text: string | null; student_alias: string | null;
+  question_id: string | null; text_review: ReviewState; identity_review: ReviewState;
+  question_review: ReviewState;
+}
 const route = (classroom: string) => `/classrooms/${encodeURIComponent(classroom)}/speech`;
 export const speech = {
   events: (id: string) => request(`${route(id)}/events`, z.array(speechEventSchema)),
   timeline: (id: string) => request(`${route(id)}/timeline`, z.array(utteranceSchema)),
   receive: (id: string, event: SpeechEvent) => request(
     `${route(id)}/events`, z.object({ created: z.boolean() }), "POST", JSON.stringify(event),
+  ),
+  review: (classroom: string, utterance: Utterance, body: ReviewRequest) => request(
+    `${route(classroom)}/${encodeURIComponent(utterance.session_id)}`
+      + `/${encodeURIComponent(utterance.segment_id)}/review`,
+    utteranceSchema, "PUT", JSON.stringify(body),
   ),
 };
 export const reviewNames: Record<ReviewState, string> = {

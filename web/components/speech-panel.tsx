@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Classroom } from "../lib/types";
 import { phaseNames, simulationEvents, sourceNames, speech, statusNames } from "../lib/speech";
 import type { SpeechEvent, Utterance } from "../lib/speech";
+import { UtteranceReview } from "./utterance-review";
 
 export function SpeechPanel({ classroom }: { classroom: Classroom }) {
   const [timeline, setTimeline] = useState<Utterance[]>([]);
@@ -60,7 +61,7 @@ export function SpeechPanel({ classroom }: { classroom: Classroom }) {
 
   return <section aria-label="语音结果与教师核验">
     <h3>模拟事件回放与教师核验</h3>
-    <p>这里只回放合成事件，不采集麦克风、不调用真实语音服务，也没有可回听音轨。</p>
+    <p>这里只回放合成事件，不采集麦克风、不调用真实语音服务。原音频可由教师另行授权归档。</p>
     <p>样例依次包含临时转写、定稿、重复事件、断流缺口、恢复、修订和结束。</p>
     <p>固定样例讨论平均分与四分之一；关联题目前请核对本课堂的题目与教学目标。</p>
     {error && <p role="alert">{error} 继续会使用同一事件标识重试，不会假装成功。</p>}
@@ -84,7 +85,7 @@ export function SpeechPanel({ classroom }: { classroom: Classroom }) {
         时间：{item.start_ms}—{item.end_ms} 毫秒；{item.overlap ? "存在重叠" : "未标记重叠"}</p>
       <p>上游原文：{item.upstream_text}</p>
       <p>教师修订：{item.teacher_text ?? "未修订"}；核验人：{item.reviewed_by ?? "未核验"}</p>
-      <p>教师核验功能正在下一任务中接入。</p>
+      <UtteranceReview classroom={classroom} utterance={item} onSaved={refresh} />
     </article>)}
     <details><summary>已保存事件与接收缺口（{events.length} 条）</summary>
       <p>缺失区间只表示未收到完整数据，不代表学生沉默。</p>

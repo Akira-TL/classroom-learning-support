@@ -1,9 +1,17 @@
 """在 SQLite 事务中保存语音事件、独立核验与可重放的原始版本。"""
 
 import sqlite3
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 
-from .models import SpeechEvent, Utterance
+from ..models import StrictModel
+from .models import ReviewRequest, SpeechEvent, Utterance
+
+
+class ReviewRecord(StrictModel):
+    actor: str
+    result: Utterance
 
 
 class SpeechConflict(ValueError):
@@ -25,9 +33,20 @@ class SpeechStore:
                 "(classroom_id TEXT, session_id TEXT, segment_id TEXT, body TEXT NOT NULL, "
                 "PRIMARY KEY(classroom_id, session_id, segment_id))"
             )
+            db.execute(
+                "CREATE TABLE IF NOT EXISTS speech_reviews "
+                "(classroom_id TEXT, session_id TEXT, segment_id TEXT, version INTEGER, body TEXT NOT NULL, "
+                "PRIMARY KEY(classroom_id, session_id, segment_id, version))"
+            )
 
-    def connect(self) -> sqlite3.Connection:
-        return sqlite3.connect(self.path, timeout=10)
+    @contextmanager
+    def connect(self) -> Iterator[sqlite3.Connection]:
+        connection = sqlite3.connect(self.path, timeout=10)
+        try:
+            with connection:
+                yield connection
+        finally:
+            connection.close()
 
     def events(self, classroom_id: str) -> list[SpeechEvent]:
         with self.connect() as db:
@@ -105,3 +124,55 @@ class SpeechStore:
             question_id=old.question_id if old else None,
         )
         db.execute("INSERT OR REPLACE INTO utterances VALUES (?, ?, ?, ?)", (*key, current.model_dump_json()))
+
+    def review(
+        self, classroom_id: str, session_id: str, segment_id: str, teacher: str, request: ReviewRequest
+    ) -> Utterance:
+        with self.connect() as db:
+            db.execute("BEGIN IMMEDIATE")
+            key = (classroom_id, session_id, segment_id)
+            row = db.execute(
+                "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?", key
+            ).fetchone()
+            if not row:
+                raise KeyError(segment_id)
+            old = Utterance.model_validate_json(row[0])
+            if old.version != request.expected_version:
+                raise SpeechConflict("发言已变化，请重新核验")
+            if old.phase in {"partial", "withdraw"} and "confirmed" in {
+                request.text_review,
+                request.identity_review,
+                request.question_review,
+            }:
+                raise SpeechConflict("临时或撤回的发言不能确认")
+            current = Utterance.model_validate(
+                old.model_dump()
+                | {
+                    "teacher_text": request.teacher_text,
+                    "student_alias": request.student_alias,
+                    "question_id": request.question_id,
+                    "text_review": request.text_review,
+                    "identity_review": request.identity_review,
+                    "question_review": request.question_review,
+                    "reviewed_by": teacher,
+                    "version": old.version + 1,
+                }
+            )
+            db.execute(
+                "UPDATE utterances SET body=? WHERE classroom_id=? AND session_id=? AND segment_id=?",
+                (current.model_dump_json(), *key),
+            )
+            db.execute(
+                "INSERT INTO speech_reviews VALUES (?, ?, ?, ?, ?)",
+                (*key, current.version, ReviewRecord(actor=teacher, result=current).model_dump_json()),
+            )
+            return current
+
+    def history(self, classroom_id: str, session_id: str, segment_id: str) -> list[ReviewRecord]:
+        with self.connect() as db:
+            rows = db.execute(
+                "SELECT body FROM speech_reviews WHERE classroom_id=? AND session_id=? AND segment_id=? "
+                "ORDER BY version",
+                (classroom_id, session_id, segment_id),
+            ).fetchall()
+        return [ReviewRecord.model_validate_json(row[0]) for row in rows]

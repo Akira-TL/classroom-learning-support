@@ -63,3 +63,21 @@ class Utterance(StrictModel):
     question_review: Literal["pending", "confirmed", "unable"] = "pending"
     reviewed_by: str | None = None
     audio_available: bool = False
+
+
+class ReviewRequest(StrictModel):
+    expected_version: int = Field(ge=1)
+    teacher_text: str | None = Field(default=None, min_length=1, max_length=6000)
+    student_alias: str | None = Field(default=None, pattern=r"^student-[0-9]{2,4}$")
+    question_id: str | None = Field(default=None, min_length=1, max_length=80)
+    text_review: Literal["pending", "confirmed", "unable"]
+    identity_review: Literal["pending", "confirmed", "unable"]
+    question_review: Literal["pending", "confirmed", "unable"]
+
+    @model_validator(mode="after")
+    def require_references(self) -> Self:
+        if self.identity_review == "confirmed" and not self.student_alias:
+            raise ValueError("确认身份需要明确学生")
+        if self.question_review == "confirmed" and not self.question_id:
+            raise ValueError("确认题目需要明确题目标识")
+        return self
