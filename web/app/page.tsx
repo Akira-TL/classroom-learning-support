@@ -7,6 +7,7 @@ import { QuestionDiagram } from "../components/diagrams/question";
 import { SpeechPanel } from "../components/speech-panel";
 import { StudentReader } from "../components/students/reader";
 import { StudentFeedbackQueue } from "../components/students/feedback-queue";
+import { ManualExercises } from "../components/manual-exercises/panel";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -118,6 +119,7 @@ export default function Home() {
             {question.diagram_required && !question.diagram_description && <p>需要补充图形，当前不能据此分析。</p>}
           </article>)}
           <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
+          <ManualExercises key={`${user.id}/${selected.id}`} classroomId={selected.id} />
           <SpeechPanel key={`${user.id}/${selected.id}`} classroom={selected} />
           <StudentFeedbackQueue key={`${user.id}/${selected.id}`} classroomId={selected.id} />
         </section>}
