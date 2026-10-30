@@ -12,6 +12,7 @@ from .audio.store import SpeechStore
 from .classroom.auth import COOKIE_NAME, AuthSettings, DemoAuth, LoginRequest, User, current_user, require_teacher
 from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
+from .learning.api import learning_router
 
 
 def create_app(database_path: Path, settings: AuthSettings | None = None) -> FastAPI:
@@ -24,6 +25,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     speech = SpeechStore(database_path)
     app.state.speech = speech
     app.include_router(speech_router(store, speech))
+    app.include_router(learning_router(store, speech))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
