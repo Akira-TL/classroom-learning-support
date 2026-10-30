@@ -16,7 +16,7 @@
 
 ## Decisions so far
 
-尚未通过决策议题解决新增问题。以上已有约束来自本次用户对话，不虚构已关闭的决策票。
+- [DeepSeek 云端模型](issues/03-model.md)：用户指定直接接入 DeepSeek，教师端使用，不开发多供应商兼容层。
 
 ## Not yet specified
 
