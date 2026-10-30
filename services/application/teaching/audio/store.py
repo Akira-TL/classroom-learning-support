@@ -110,9 +110,17 @@ class SpeechStore:
                     if old.phase == "partial" and event.sequence <= old.sequence:
                         return
                     if old.phase != "partial":
-                        if event.text == old.upstream_text:
+                        effective_text = event.text if event.text is not None else old.upstream_text
+                        if (
+                            effective_text == old.upstream_text
+                            and event.start_ms == old.start_ms
+                            and event.end_ms == old.end_ms
+                            and event.source_ref == old.source_ref
+                            and event.overlap == old.overlap
+                            and event.source_kind == old.source_kind
+                        ):
                             return
-                        raise SpeechConflict("同版本定稿内容冲突，需要递增修订号")
+                        raise SpeechConflict("同修订号的定稿快照不一致，需要递增修订号")
                 elif old.phase != "partial":
                     raise SpeechConflict("定稿后变更必须递增修订号")
         current = Utterance(
