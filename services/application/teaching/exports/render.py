@@ -1,5 +1,6 @@
 from html import escape
 
+from .diagrams import question_diagram
 from .models import ExportMetadata, ExportSources
 
 
@@ -14,12 +15,16 @@ def render_report(metadata: ExportMetadata, source: ExportSources) -> str:
     parts = [
         section("课堂与教学目标", f"{source.classroom.title} · {source.classroom.date}\n{source.classroom.objective}"),
         section(
-            "已确认的证据引用", f"题目：{context.question}\n学生：{content.target_student}\n原话：{context.utterance}"
+            "教师核验的题目与参考答案",
+            f"题目标识：{context.question_id}\n题干：{context.question}\n参考答案：{context.reference_answer}",
         ),
+        question_diagram(context),
+        section("已确认的证据引用", f"学生：{content.target_student}\n原话：{context.utterance}"),
         section(
             "教师核验的学习证据",
             f"{source.evidence.content.interpretation}\n局限：{source.evidence.content.limitation}",
         ),
+        section("证据跟进问题", source.evidence.content.follow_up_question),
         section(
             "提问安排",
             f"对象：{content.target_student}\n提问：{content.question}\n准备：{content.preparation}\n备选：{content.alternative}",
