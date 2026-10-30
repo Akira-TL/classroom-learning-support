@@ -9,6 +9,7 @@ import { StudentReader } from "../components/students/reader";
 import { StudentFeedbackQueue } from "../components/students/feedback-queue";
 import { ManualExercises } from "../components/manual-exercises/panel";
 import { AdminOverview } from "../components/overview/panel";
+import { ParentReader } from "../components/reports/parent-reader";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -93,6 +94,7 @@ export default function Home() {
       })}>退出登录</button>
       {user.role === "student" ? <StudentReader key={user.id} />
         : user.role === "admin" ? <AdminOverview key={user.id} />
+        : user.role === "parent" ? <ParentReader key={user.id} />
         : user.role !== "teacher" ? <p>此功能验证入口目前仅提供教师课堂管理；当前账号没有教师权限。</p> : <>
         <h2>授权课堂</h2>
         <button disabled={busy} onClick={() => openForm(null)}>创建课堂</button>

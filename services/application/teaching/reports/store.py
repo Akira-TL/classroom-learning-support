@@ -149,6 +149,30 @@ class ReportStore:
             rows = db.execute("SELECT body FROM parent_reports WHERE classroom_id=? ORDER BY rowid", (cid,)).fetchall()
             return [self._view(db, ParentReport.model_validate_json(row[0])) for row in rows]
 
+    def parent_reports(self, user: User) -> list[ReportView]:
+        if user.role != "parent":
+            raise StoreError(403, "此操作需要家长权限")
+        with self.store.connection() as db:
+            db.execute("BEGIN IMMEDIATE")
+            rows = db.execute("SELECT body FROM parent_reports ORDER BY rowid DESC").fetchall()
+            reports = [ParentReport.model_validate_json(row[0]) for row in rows]
+            return [
+                self._view(db, report)
+                for report in reports
+                if report.parent_id == user.id and report.student_id == user.student_id
+            ]
+
+    def parent_questions(self, report_id: str, user: User) -> list[ParentQuestion]:
+        with self.store.connection() as db:
+            report = self._record(db, report_id)
+            if user.role != "parent" or report.parent_id != user.id or report.student_id != user.student_id:
+                raise StoreError(403, "无权查看此报告的家长疑问")
+            rows = db.execute(
+                "SELECT body FROM parent_questions WHERE report_id=? AND parent_id=? ORDER BY rowid",
+                (report_id, user.id),
+            ).fetchall()
+            return [ParentQuestion.model_validate_json(row[0]) for row in rows]
+
     def revoke(self, cid: str, report_id: str, teacher: str, request: RevokeRequest) -> ReportView:
         self.store.get_classroom(teacher, cid)
         with self.store.connection() as db:

@@ -21,6 +21,14 @@ def reports_router(classrooms: SQLiteStore) -> APIRouter:
     router = APIRouter(tags=["家长反馈"])
     store = ReportStore(classrooms)
 
+    @router.get("/api/parent-reports", response_model=list[ReportView])
+    def parent_listing(user: Annotated[User, Depends(current_user)]) -> list[ReportView]:
+        return store.parent_reports(user)
+
+    @router.get("/api/parent-reports/{report_id}/questions", response_model=list[ParentQuestion])
+    def parent_questions(report_id: str, user: Annotated[User, Depends(current_user)]) -> list[ParentQuestion]:
+        return store.parent_questions(report_id, user)
+
     @router.post("/api/classrooms/{cid}/parent-reports/preview", response_model=ReportPreview)
     def preview(cid: str, payload: PreviewRequest, user: Annotated[User, Depends(require_teacher)]) -> ReportPreview:
         return store.preview(cid, user.id, payload)

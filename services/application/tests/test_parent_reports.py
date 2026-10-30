@@ -10,6 +10,7 @@ from test_evidence import model_response as model_response
 from teaching.learning.models import EvidenceRecord, EvidenceReview, GenerationResult
 from teaching.reports.models import (
     ParentQuestion,
+    ParentReport,
     PreviewRequest,
     PublishRequest,
     QuestionRequest,
@@ -18,6 +19,83 @@ from teaching.reports.models import (
     ResolveQuestion,
     RevokeRequest,
 )
+
+
+def test_parent_list_is_scoped_and_withdrawn_body_hidden(reports: "ReportsEnvironment") -> None:
+    report = reports.publish()
+    with reports.base.store.connection() as db:
+        row = db.execute("SELECT body FROM parent_reports WHERE id=?", (report.id,)).fetchone()
+        original = ParentReport.model_validate_json(row[0])
+        foreign = original.model_copy(
+            update={"id": "foreign-report", "parent_id": "parent-02", "student_id": "student-02"}
+        )
+        db.execute(
+            "INSERT INTO parent_reports VALUES (?, ?, ?, ?, ?)",
+            (
+                foreign.id,
+                foreign.classroom_id,
+                "foreign-report-key",
+                "{}",
+                foreign.model_dump_json(),
+            ),
+        )
+    for username in ("teacher-01", "student-01", "admin-01"):
+        reports.login(username)
+        assert reports.base.client.get("/api/parent-reports").status_code == 403
+    reports.login("parent-01")
+    listing = TypeAdapter(list[ReportView]).validate_json(reports.base.client.get("/api/parent-reports").content)
+    assert [item.id for item in listing] == [report.id]
+    assert listing[0].summary == reports.request.summary
+    reports.login("teacher-01")
+    assert (
+        reports.base.client.post(
+            f"{reports.url}/{report.id}/revoke",
+            content=RevokeRequest(expected_revision=1).model_dump_json(),
+        ).status_code
+        == 200
+    )
+    reports.login("parent-01")
+    listing = TypeAdapter(list[ReportView]).validate_json(reports.base.client.get("/api/parent-reports").content)
+    assert listing[0].status == "revoked"
+    assert listing[0].summary is None
+    assert listing[0].home_activity is None
+
+
+def test_parent_can_read_previous_question_reply_after_withdrawal(reports: "ReportsEnvironment") -> None:
+    report = reports.publish()
+    reports.login("parent-01")
+    question_url = f"/api/parent-reports/{report.id}/questions"
+    response = reports.base.client.post(
+        question_url,
+        content=QuestionRequest(
+            text="能否进一步解释？",
+            idempotency_key="parent-question-reply",
+        ).model_dump_json(),
+    )
+    question = ParentQuestion.model_validate_json(response.content)
+    reports.login("teacher-01")
+    response = reports.base.client.put(
+        f"/api/classrooms/{reports.base.cid}/parent-report-questions/{question.id}",
+        content=ResolveQuestion(
+            expected_revision=1, status="answered", response="请比较每份是否同样大"
+        ).model_dump_json(),
+    )
+    assert response.status_code == 200
+    assert (
+        reports.base.client.post(
+            f"{reports.url}/{report.id}/revoke",
+            content=RevokeRequest(expected_revision=1).model_dump_json(),
+        ).status_code
+        == 200
+    )
+    assert reports.base.client.get(question_url).status_code == 403
+    reports.login("parent-01")
+    listing = TypeAdapter(list[ParentQuestion]).validate_json(reports.base.client.get(question_url).content)
+    assert listing[0].response == "请比较每份是否同样大"
+    assert listing[0].status == "answered"
+    reports.login("student-01")
+    assert reports.base.client.get(question_url).status_code == 403
+
 
 PASSWORD = "evidence-test-password"
 

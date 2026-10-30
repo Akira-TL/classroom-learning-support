@@ -9,6 +9,7 @@ import { EvidenceReview } from "./evidence-review";
 import { ExercisePanel } from "./exercises/panel";
 import { PlanPanel } from "./plans/panel";
 import { ManualEvidencePanel } from "./manual-evidence/panel";
+import { PublishPanel } from "./reports/publish-panel";
 
 export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; utterance: Utterance }) {
   const [results, setResults] = useState<GenerationResult[]>([]);
@@ -105,6 +106,7 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
       </details>}
       {result.evidence ? <>
         <EvidenceReview classroomId={classroom.id} record={result.evidence} onSaved={updateRecord} />
+        <PublishPanel classroomId={classroom.id} evidence={result.evidence} />
         <ExercisePanel classroomId={classroom.id} evidence={result.evidence} />
         <PlanPanel classroomId={classroom.id} evidence={result.evidence} />
       </> : <p>此任务没有可供确认的证据记录。</p>}
