@@ -121,9 +121,9 @@ export default function Home() {
             {question.diagram_required && !question.diagram_description && <p>需要补充图形，当前不能据此分析。</p>}
           </article>)}
           <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
-          <ManualExercises key={`${user.id}/${selected.id}`} classroomId={selected.id} />
-          <SpeechPanel key={`${user.id}/${selected.id}`} classroom={selected} />
-          <StudentFeedbackQueue key={`${user.id}/${selected.id}`} classroomId={selected.id} />
+          <ManualExercises key={`manual/${user.id}/${selected.id}`} classroomId={selected.id} />
+          <SpeechPanel key={`speech/${user.id}/${selected.id}`} classroom={selected} />
+          <StudentFeedbackQueue key={`feedback/${user.id}/${selected.id}`} classroomId={selected.id} />
         </section>}
       </>}
     </>}
