@@ -17,6 +17,7 @@ from .deletion.api import deletion_router
 from .exercises.api import exercises_router
 from .exports.api import exports_router
 from .inputs.api import inputs_router
+from .integration.api import speech_ingest_router
 from .learning.api import learning_router
 from .manual_exercises.api import manual_exercises_router
 from .overview.api import overview_router
@@ -46,6 +47,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app.include_router(overview_router(store))
     app.include_router(manual_exercises_router(store))
     app.include_router(inputs_router(store))
+    app.include_router(speech_ingest_router(store, speech))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
