@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { ClassroomForm } from "../components/classroom-form";
 import { LoginForm } from "../components/login-form";
+import { QuestionDiagram } from "../components/diagrams/question";
 import { SpeechPanel } from "../components/speech-panel";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
@@ -110,6 +111,7 @@ export default function Home() {
           {selected.questions.map((question) => <article key={question.id}>
             <h3>{question.id}</h3><p>{question.text}</p><p>参考答案：{question.reference_answer}</p>
             <p>图形说明：{question.diagram_description ?? "未提供"}</p>
+            <QuestionDiagram question={question} />
             {question.diagram_required && !question.diagram_description && <p>需要补充图形，当前不能据此分析。</p>}
           </article>)}
           <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>

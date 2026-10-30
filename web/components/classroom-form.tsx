@@ -4,6 +4,8 @@ import { useState } from "react";
 import type { FormEvent } from "react";
 import { contentSchema, emptyClassroom, emptyQuestion } from "../lib/types";
 import type { Classroom, ClassroomContent, Question } from "../lib/types";
+import { diagramFor, diagramTemplates } from "../lib/diagrams/templates";
+import { QuestionDiagram } from "./diagrams/question";
 
 export function ClassroomForm({ classroom, busy, onSave, onCancel }: {
   classroom: Classroom | null; busy: boolean;
@@ -63,10 +65,19 @@ export function ClassroomForm({ classroom, busy, onSave, onCancel }: {
         <label><input type="checkbox" checked={question.diagram_required}
           onChange={(event) => changeQuestion(index, { diagram_required: event.target.checked })} />
           需要图形上下文</label>
+        <label>使用已核验图形示意<select value={diagramFor(question)?.id ?? ""} onChange={(event) => {
+          const template = diagramTemplates.find((item) => item.id === event.target.value);
+          if (template) changeQuestion(index, { diagram_required: true, diagram_description: template.description });
+        }}>
+          <option value="">自定义／保留当前说明（不清空文字）</option>
+          {diagramTemplates.map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+        </select></label>
+        <p>选择固定示意会替换下方说明；自定义说明仍可手工编辑，不会依据关键词自动画图。</p>
         <label>图形说明<textarea maxLength={4000} value={question.diagram_description ?? ""}
           onChange={(event) => changeQuestion(index, {
             diagram_description: event.target.value || null,
           })} /></label>
+        <QuestionDiagram question={question} />
         <button type="button" disabled={content.questions.length === 1}
           onClick={() => setContent({ ...content, questions: content.questions.filter((_, i) => i !== index) })}>
           删除本题
