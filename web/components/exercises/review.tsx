@@ -26,7 +26,7 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
     setItems((previous) => previous.map((item, position) => position === index ? { ...item, ...content } : item));
     setChecked((previous) => previous.filter((item) => item !== level));
   }
-  async function act(action: "confirmed" | "rejected" | "adopt" | "unadopt") {
+  async function act(action: "pending" | "confirmed" | "rejected" | "adopt" | "unadopt") {
     setError(""); setNotice("");
     const parsed = exercisesSchema.safeParse(items);
     if (!parsed.success) {
@@ -39,6 +39,8 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
         ? await exercisesApi.adopt(classroomId, record.id, revision, action === "adopt")
         : await exercisesApi.review(classroomId, record.id, revision, action, parsed.data);
       accept(updated);
+      if (action === "pending" || action === "rejected") setChecked([]);
+      if (action === "pending") setNotice(`待核验草稿已保存，版本 ${updated.revision}；未确认且未采用。`);
     } catch (failure) { setError(failure instanceof Error ? failure.message : "练习操作失败。"); }
     finally { setBusy(false); }
   }
@@ -46,7 +48,7 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
   return <section aria-label="分层练习核验">
     <h6>练习：{evidenceNames[record.status]}；{record.adopted ? "已采用" : "未采用"}</h6>
     <p>依据证据 {record.evidence_id}，版本 {record.evidence_revision}；
-      练习版本 {record.revision}，当前编辑依据版本 {revision}；核验人 {record.reviewed_by ?? "未核验"}。</p>
+      练习版本 {record.revision}，当前编辑依据版本 {revision}；编辑或核验人 {record.reviewed_by ?? "尚无记录"}。</p>
     <p>模型输出没有经过自动数学正确性认证。请逐题检查题干、图形需求、答案与解释。</p>
     {error && <p role="alert">{error} 发生版本冲突时请刷新并检查后手动载入，不自动覆盖。</p>}
     {revision !== record.revision && <p role="alert">记录已更新，当前编辑保留；请刷新后决定是否载入最新内容。</p>}
@@ -67,13 +69,14 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
             : previous.filter((level) => level !== item.level));
         }} />我已核对本题题干、答案与解释</label>
       </fieldset>)}
+      <button onClick={() => void act("pending")}>保存为待核验草稿（不确认）</button>
       <button disabled={checked.length !== 3} onClick={() => void act("confirmed")}>确认这组练习</button>
       <button onClick={() => void act("rejected")}>驳回这组练习</button>
       <button disabled={record.status !== "confirmed" || dirty || revision !== record.revision || record.adopted}
         onClick={() => void act("adopt")}>采用已确认练习</button>
       <button disabled={!record.adopted || dirty || revision !== record.revision}
         onClick={() => void act("unadopt")}>撤销采用</button>
-      {dirty && <p>当前编辑尚未保存，请先逐题核对并确认，再操作采用。</p>}
+      {dirty && <p>当前编辑尚未保存，可先保存待核验草稿；逐题核对并确认后才能采用。</p>}
       <button onClick={() => {
         setItems(record.exercises); setRevision(record.revision); setChecked([]); setError("");
         setNotice("已载入当前记录，未保存的编辑已重置。");

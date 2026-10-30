@@ -46,7 +46,7 @@ export const exercisesApi = {
     `${route(classroom)}/generate`, resultSchema, "POST", JSON.stringify(body),
   ),
   review: (classroom: string, id: string, revision: number,
-    action: "confirmed" | "rejected", exercises: Exercise[]) => request(
+    action: "pending" | "confirmed" | "rejected", exercises: Exercise[]) => request(
     `${route(classroom)}/${encodeURIComponent(id)}/review`, exerciseRecordSchema, "PUT",
     JSON.stringify({ expected_revision: revision, action, exercises }),
   ),

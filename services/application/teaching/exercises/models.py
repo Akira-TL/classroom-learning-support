@@ -39,7 +39,7 @@ class ExerciseRecord(StrictModel):
 
 class ExerciseReview(StrictModel):
     expected_revision: int = Field(ge=1)
-    action: Literal["confirmed", "rejected"]
+    action: Literal["pending", "confirmed", "rejected"]
     exercises: list[Exercise] | None = Field(default=None, min_length=3, max_length=3)
 
     @model_validator(mode="after")
