@@ -3,7 +3,12 @@ name = "classroom-teaching"
 version = "0.1.0"
 description = "课堂学习支持应用"
 requires-python = ">=3.13,<3.14"
-dependencies = ["httpx>=0.28,<0.29", "pydantic>=2.11,<3"]
+dependencies = [
+    "fastapi>=0.115,<1",
+    "httpx>=0.28,<0.29",
+    "pydantic>=2.11,<3",
+    "uvicorn>=0.34,<1",
+]
 
 [dependency-groups]
 dev = ["pytest>=8.3,<9", "ruff>=0.11,<1"]

@@ -14,6 +14,7 @@
 - [应用开发执行约定](docs/planning/应用开发执行约定.md)
 - [赛事约束与规格调整](docs/planning/赛事约束与规格调整.md)
 - [DeepSeek 模型联调与运行](docs/development/模型联调.md)
+- [本机应用启停与演示账号](docs/development/本机应用运行.md)
 - [三版视觉原型与前端计划](docs/planning/视觉原型计划.md)
 - [语音模块对接契约](docs/integration/语音模块对接契约.md)
 - [协作开发规范](docs/integration/协作开发规范.md)

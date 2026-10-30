@@ -1,0 +1,14 @@
+* { box-sizing: border-box; }
+body { font-family: system-ui, sans-serif; max-width: 1080px; margin: auto; padding: 24px; line-height: 1.6; }
+label { display: block; margin: 12px 0; }
+input:not([type="checkbox"]), textarea { display: block; width: 100%; max-width: 760px; padding: 6px; }
+textarea { min-height: 80px; }
+button { margin: 6px 8px 6px 0; padding: 6px 10px; }
+button:disabled { cursor: wait; }
+fieldset { margin: 16px 0; padding: 12px; }
+table { width: 100%; border-collapse: collapse; }
+th, td { border: 1px solid #999; padding: 8px; text-align: left; }
+:focus-visible { outline: 3px solid #1558a6; outline-offset: 2px; }
+[role="alert"] { border: 1px solid #a00; padding: 12px; white-space: pre-wrap; }
+.notice { border: 1px solid #777; padding: 12px; }
+.table-scroll { overflow-x: auto; }

@@ -1,0 +1,8 @@
+import type { Metadata } from "next";
+import "./globals.css";
+
+export const metadata: Metadata = { title: "课堂学习支持 · 功能验证" };
+
+export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  return <html lang="zh-CN"><body>{children}</body></html>;
+}
