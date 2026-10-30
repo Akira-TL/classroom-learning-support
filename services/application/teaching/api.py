@@ -16,6 +16,7 @@ from .exercises.api import exercises_router
 from .learning.api import learning_router
 from .plans.api import plans_router
 from .reports.api import reports_router
+from .students.api import students_router
 
 
 def create_app(database_path: Path, settings: AuthSettings | None = None) -> FastAPI:
@@ -32,6 +33,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app.include_router(exercises_router(store))
     app.include_router(reports_router(store))
     app.include_router(plans_router(store))
+    app.include_router(students_router(store))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:
