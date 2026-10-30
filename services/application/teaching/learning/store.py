@@ -40,6 +40,34 @@ class EvidenceStore:
                 );
             """)
 
+    def require_confirmed(
+        self,
+        db: sqlite3.Connection,
+        cid: str,
+        teacher: str,
+        evidence_id: str,
+        revision: int,
+    ) -> EvidenceRecord:
+        """在调用方的发布或采用事务内检查当前证据，不信任先前读出的状态。"""
+        owner = db.execute("SELECT teacher_id FROM classrooms WHERE id=?", (cid,)).fetchone()
+        if not owner:
+            raise StoreError(404, "课堂不存在")
+        if owner[0] != teacher:
+            raise StoreError(403, "无权访问该课堂")
+        row = db.execute(
+            "SELECT body FROM evidence_records WHERE id=? AND classroom_id=?", (evidence_id, cid)
+        ).fetchone()
+        if not row:
+            raise StoreError(404, "证据不存在")
+        record = EvidenceRecord.model_validate_json(row[0])
+        task_row = db.execute("SELECT body FROM evidence_tasks WHERE id=?", (record.task_id,)).fetchone()
+        if not task_row:
+            raise StoreError(409, "证据来源任务缺失，不能采用或发布")
+        current = self._refresh(db, EvidenceTask.model_validate_json(task_row[0]), teacher).evidence
+        if current is None or current.status != "confirmed" or current.revision != revision:
+            raise StoreError(409, "需要当前版本的已确认证据，请重新核验")
+        return current
+
     def _basis(self, db: sqlite3.Connection, cid: str, teacher: str, request: GenerateEvidence) -> EvidenceBasis:
         row = db.execute("SELECT payload FROM classrooms WHERE id=?", (cid,)).fetchone()
         if not row:

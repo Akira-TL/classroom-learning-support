@@ -14,12 +14,38 @@ from teaching.audio.models import ReviewRequest, SpeechEvent
 from teaching.audio.store import SpeechStore
 from teaching.classroom.auth import AuthSettings
 from teaching.classroom.classrooms import CreateClassroom, Question, UpdateClassroom
-from teaching.classroom.storage import SQLiteStore
+from teaching.classroom.storage import SQLiteStore, StoreError
 from teaching.deepseek import DeepSeek
 from teaching.learning.models import EvidenceRecord, EvidenceReview, GenerateEvidence, GenerationResult
+from teaching.learning.store import EvidenceStore
 
 PASSWORD = "evidence-test-password"
 QUOTE = "分成四块就都是四分之一"
+
+
+def test_confirmed_evidence_gate_checks_within_transaction(
+    environment: "Environment",
+    model_response: list[httpx.Request],
+) -> None:
+    environment.verify()
+    result = GenerationResult.model_validate_json(environment.generate().content)
+    record = result.evidence
+    gate = EvidenceStore(environment.store)
+    with environment.store.connection() as db, pytest.raises(StoreError, match="已确认证据"):
+        gate.require_confirmed(db, environment.cid, "teacher-01", record.id, record.revision)
+    response = environment.client.put(
+        f"{environment.url}/{record.id}/review",
+        content=EvidenceReview(expected_revision=record.revision, action="confirmed").model_dump_json(),
+    )
+    confirmed = EvidenceRecord.model_validate_json(response.content)
+    with environment.store.connection() as db:
+        current = gate.require_confirmed(db, environment.cid, "teacher-01", confirmed.id, confirmed.revision)
+        assert current.status == "confirmed"
+    with environment.store.connection() as db, pytest.raises(StoreError, match="无权"):
+        gate.require_confirmed(db, environment.cid, "teacher-02", confirmed.id, confirmed.revision)
+    environment.verify(2, "student-02")
+    with environment.store.connection() as db, pytest.raises(StoreError, match="已确认证据"):
+        gate.require_confirmed(db, environment.cid, "teacher-01", confirmed.id, confirmed.revision)
 
 
 @dataclass
