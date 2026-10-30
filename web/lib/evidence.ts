@@ -27,13 +27,15 @@ const taskSchema = z.object({
   id: z.string(), classroom_id: z.string(), request: generateSchema, basis: basisSchema,
   status: z.enum(["running", "succeeded", "failed", "stale"]), error: z.string().nullable(),
   discarded_draft: draftSchema.nullable(),
+  origin: z.enum(["deepseek", "teacher_manual"]).default("deepseek"),
+  manual_content: evidenceContentSchema.nullable().optional(),
 });
 export const evidenceRecordSchema = z.object({
   id: z.string(), task_id: z.string(), classroom_id: z.string(), basis: basisSchema, original: draftSchema,
   content: evidenceContentSchema, revision: z.number().int().positive(),
   status: z.enum(["pending", "confirmed", "rejected", "stale"]), reviewed_by: z.string().nullable(),
 });
-const resultSchema = z.object({ task: taskSchema, evidence: evidenceRecordSchema.nullable() });
+export const resultSchema = z.object({ task: taskSchema, evidence: evidenceRecordSchema.nullable() });
 export type EvidenceContent = z.infer<typeof evidenceContentSchema>;
 export type EvidenceRecord = z.infer<typeof evidenceRecordSchema>;
 export type GenerationResult = z.infer<typeof resultSchema>;

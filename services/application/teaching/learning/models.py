@@ -12,6 +12,10 @@ class GenerateEvidence(StrictModel):
     idempotency_key: str = Field(min_length=8, max_length=100)
 
 
+class ManualEvidenceRequest(GenerateEvidence):
+    content: EvidenceContent
+
+
 class EvidenceBasis(StrictModel):
     session_id: str
     segment_id: str
@@ -28,6 +32,8 @@ class EvidenceTask(StrictModel):
     status: Literal["running", "succeeded", "failed", "stale"]
     error: str | None = None
     discarded_draft: EvidenceDraft | None = None
+    origin: Literal["deepseek", "teacher_manual"] = "deepseek"
+    manual_content: EvidenceContent | None = None
 
 
 class EvidenceRecord(StrictModel):

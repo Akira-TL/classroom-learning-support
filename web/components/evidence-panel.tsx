@@ -8,6 +8,7 @@ import type { EvidenceRecord, GenerateEvidence, GenerationResult } from "../lib/
 import { EvidenceReview } from "./evidence-review";
 import { ExercisePanel } from "./exercises/panel";
 import { PlanPanel } from "./plans/panel";
+import { ManualEvidencePanel } from "./manual-evidence/panel";
 
 export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; utterance: Utterance }) {
   const [results, setResults] = useState<GenerationResult[]>([]);
@@ -26,7 +27,8 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
     setResults((previous) => matched.map((result) => mergeResult(
       previous.find((item) => item.task.id === result.task.id), result,
     )));
-    setAttempt((previous) => previous ?? matched.at(-1)?.task.request ?? null);
+    setAttempt((previous) => previous
+      ?? matched.filter((item) => item.task.origin === "deepseek").at(-1)?.task.request ?? null);
     setLoaded(true);
   }
 
@@ -88,9 +90,12 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
     <button disabled={loading} onClick={() => void refresh()}>{loading ? "正在读取…" : "刷新证据与任务"}</button>
     {attempt && <p>当前请求依据发言版本 {attempt.expected_version}。
       {attempt.expected_version !== utterance.version && "发言已更新；重试旧请求不会改用新版本，需明确重新生成。"}</p>}
-    {!loading && results.length === 0 && <p>本发言尚无生成任务。</p>}
+    <ManualEvidencePanel classroomId={classroom.id} utterance={utterance} onSaved={refresh} />
+    {!loading && results.length === 0 && <p>本发言尚无生成或人工录入任务。</p>}
     {results.map((result) => <article key={result.task.id}>
-      <p>任务 {result.task.id}：{taskNames[result.task.status]}；
+      <p>任务 {result.task.id}：{result.task.origin === "teacher_manual"
+        ? result.task.status === "succeeded" ? "人工初稿已保存，仍需教师核验" : taskNames[result.task.status]
+        : taskNames[result.task.status]}；
         依据发言版本 {result.task.basis.utterance_version}</p>
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <details>

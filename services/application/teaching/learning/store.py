@@ -1,24 +1,22 @@
 """生成调用期间不持锁；结果写入前在事务中重新核对语义依据。"""
 
-import hashlib
 import sqlite3
 from uuid import uuid4
 
 import httpx
-from pydantic import ValidationError
 
-from ..audio.models import Utterance
-from ..classroom.classrooms import Classroom
 from ..classroom.storage import SQLiteStore, StoreError
 from ..deepseek import DeepSeek, GenerationError
-from ..models import EvidenceDraft, VerifiedContext
+from ..models import EvidenceDraft
+from .context import build_basis
+from .manual import save_manual
 from .models import (
-    EvidenceBasis,
     EvidenceRecord,
     EvidenceReview,
     EvidenceTask,
     GenerateEvidence,
     GenerationResult,
+    ManualEvidenceRequest,
 )
 
 
@@ -68,62 +66,9 @@ class EvidenceStore:
             raise StoreError(409, "需要当前版本的已确认证据，请重新核验")
         return current
 
-    def _basis(self, db: sqlite3.Connection, cid: str, teacher: str, request: GenerateEvidence) -> EvidenceBasis:
-        row = db.execute("SELECT payload FROM classrooms WHERE id=?", (cid,)).fetchone()
-        if not row:
-            raise StoreError(404, "课堂不存在")
-        classroom = Classroom.model_validate_json(row[0])
-        if classroom.teacher_id != teacher:
-            raise StoreError(403, "无权访问课堂")
-        row = db.execute(
-            "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?",
-            (cid, request.session_id, request.segment_id),
-        ).fetchone()
-        if not row:
-            raise StoreError(404, "发言不存在")
-        utterance = Utterance.model_validate_json(row[0])
-        if utterance.phase not in {"final", "revision"} or (
-            utterance.text_review,
-            utterance.identity_review,
-            utterance.question_review,
-        ) != ("confirmed", "confirmed", "confirmed"):
-            raise StoreError(409, "发言文字、身份和题目须分别核验")
-        if utterance.student_alias not in classroom.students:
-            raise StoreError(409, "发言学生不在当前课堂名单")
-        question = next((item for item in classroom.questions if item.id == utterance.question_id), None)
-        if question is None:
-            raise StoreError(409, "发言题目不属于当前课堂")
-        fingerprint = hashlib.sha256(question.model_dump_json().encode()).hexdigest()
-        try:
-            context = VerifiedContext(
-                question_id=question.id,
-                question_revision=int(fingerprint[:12], 16) + 1,
-                objective=classroom.objective,
-                question=question.text,
-                reference_answer=question.reference_answer,
-                diagram_required=question.diagram_required,
-                diagram_description=question.diagram_description,
-                utterance_id=utterance.segment_id,
-                utterance_revision=utterance.version,
-                student_alias=utterance.student_alias,
-                utterance=utterance.teacher_text or utterance.upstream_text,
-                text_confirmed=True,
-                identity_confirmed=True,
-                question_confirmed=True,
-            )
-        except ValidationError:
-            raise StoreError(422, "教学上下文不足，请补充题目图形等必要内容") from None
-        return EvidenceBasis(
-            session_id=request.session_id,
-            segment_id=request.segment_id,
-            utterance_version=utterance.version,
-            question_fingerprint=fingerprint,
-            context=context,
-        )
-
     def _is_current(self, db: sqlite3.Connection, task: EvidenceTask, teacher: str) -> bool:
         try:
-            return self._basis(db, task.classroom_id, teacher, task.request) == task.basis
+            return build_basis(db, task.classroom_id, teacher, task.request) == task.basis
         except StoreError:
             return False
 
@@ -147,6 +92,9 @@ class EvidenceStore:
                 self._save_record(db, record)
         return GenerationResult(task=task, evidence=record)
 
+    def manual(self, cid: str, teacher: str, request: ManualEvidenceRequest) -> GenerationResult:
+        return save_manual(self, cid, teacher, request)
+
     def generate(self, cid: str, teacher: str, request: GenerateEvidence) -> GenerationResult:
         self.store.get_classroom(teacher, cid)
         with self.store.connection() as db:
@@ -157,10 +105,10 @@ class EvidenceStore:
             ).fetchone()
             if row:
                 task = EvidenceTask.model_validate_json(row[0])
-                if task.request != request:
+                if task.origin != "deepseek" or task.request != request:
                     raise StoreError(409, "相同幂等标识不能用于不同生成请求")
                 return self._refresh(db, task, teacher)
-            basis = self._basis(db, cid, teacher, request)
+            basis = build_basis(db, cid, teacher, request)
             if basis.utterance_version != request.expected_version:
                 raise StoreError(409, "发言版本已变化，请重新读取")
             task = EvidenceTask(id=uuid4().hex, classroom_id=cid, request=request, basis=basis, status="running")

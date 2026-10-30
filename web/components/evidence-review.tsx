@@ -34,7 +34,7 @@ export function EvidenceReview({ classroomId, record, onSaved }: {
     <p>证据版本 {record.revision}；本次编辑依据版本 {revision}；核验人 {record.reviewed_by ?? "未核验"}</p>
     <p>依据：题目 {record.basis.context.question_id}；发言 {record.basis.segment_id}；
       发言版本 {record.basis.utterance_version}；题目版本指纹 {record.basis.question_fingerprint}</p>
-    <p>模型：{record.original.model}</p>
+    <p>{record.original.model === "teacher_manual" ? "来源：教师人工录入" : `模型：${record.original.model}`}</p>
     <blockquote>引用原话：{record.content.quote}</blockquote>
     {record.revision !== revision && <p role="alert">记录已有更新，当前编辑保留；请刷新检查后载入最新内容。</p>}
     {record.status === "stale" && <p>过期证据保留供核对，不能继续确认。请重核发言并明确重新生成。</p>}

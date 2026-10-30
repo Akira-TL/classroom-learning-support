@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends
 from ..audio.store import SpeechStore
 from ..classroom.auth import User, require_teacher
 from ..classroom.storage import SQLiteStore
-from .models import EvidenceRecord, EvidenceReview, GenerateEvidence, GenerationResult
+from .models import EvidenceRecord, EvidenceReview, GenerateEvidence, GenerationResult, ManualEvidenceRequest
 from .store import EvidenceStore
 
 
@@ -27,6 +27,14 @@ def learning_router(classroom_store: SQLiteStore, speech_store: SpeechStore) -> 
     ) -> GenerationResult:
         classroom_store.get_classroom(user.id, classroom_id)
         return evidence.generate(classroom_id, user.id, request)
+
+    @router.post("/manual", response_model=GenerationResult)
+    def manual(
+        classroom_id: str,
+        request: ManualEvidenceRequest,
+        user: Annotated[User, Depends(require_teacher)],
+    ) -> GenerationResult:
+        return evidence.manual(classroom_id, user.id, request)
 
     @router.put("/{evidence_id}/review", response_model=EvidenceRecord)
     def review(
