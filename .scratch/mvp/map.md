@@ -17,6 +17,7 @@
 ## Decisions so far
 
 - [DeepSeek 云端模型](issues/03-model.md)：用户指定直接接入 DeepSeek，教师端使用，不开发多供应商兼容层。
+- [四角色演示授权](issues/05-access.md)：固定账号与服务端绑定，管理者仅看汇总，少于 5 人隐藏个人表现统计。
 
 ## Not yet specified
 
