@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { ClassroomForm } from "../components/classroom-form";
 import { LoginForm } from "../components/login-form";
 import { QuestionDiagram } from "../components/diagrams/question";
@@ -12,6 +12,7 @@ import { AdminOverview } from "../components/overview/panel";
 import { InputPanel } from "../components/inputs/panel";
 import { ManualExercises } from "../components/manual-exercises/panel";
 import { DeletionPanel } from "../components/deletion/panel";
+import { selectionAfterRemoval } from "../lib/deletion/attempts";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
 
@@ -21,9 +22,16 @@ const roleNames: Record<User["role"], string> = {
 
 export default function Home() {
   const [user, setUser] = useState<User | null>(null);
+  const authScope = useRef({ userId: user?.id ?? null, generation: 0 });
+  if (authScope.current.userId !== (user?.id ?? null)) {
+    authScope.current = { userId: user?.id ?? null, generation: authScope.current.generation + 1 };
+  }
   const [classrooms, setClassrooms] = useState<Classroom[]>([]);
-  const [selected, setSelected] = useState<Classroom | null>(null);
-  const [formOpen, setFormOpen] = useState(false);
+  const [{ selected, formOpen }, setSelection] = useState<{ selected: Classroom | null; formOpen: boolean }>({
+    selected: null, formOpen: false,
+  });
+  const setSelected = (value: Classroom | null) => setSelection((previous) => ({ ...previous, selected: value }));
+  const setFormOpen = (value: boolean) => setSelection((previous) => ({ ...previous, formOpen: value }));
   const [formKey, setFormKey] = useState(0);
   const [busy, setBusy] = useState(true);
   const [error, setError] = useState("");
@@ -80,9 +88,12 @@ export default function Home() {
     setSelected(classroom); setFormOpen(true); setFormKey((value) => value + 1);
   }
 
-  async function removed() {
-    setSelected(null); setFormOpen(false);
-    setClassrooms(await api.classrooms());
+  async function removed(deletedClassroomId: string) {
+    const generation = authScope.current.generation;
+    setSelection((previous) => selectionAfterRemoval(previous, deletedClassroomId));
+    const updated = await api.classrooms();
+    if (authScope.current.generation !== generation) return;
+    setClassrooms(updated);
     setNotice("课堂已移除，受控入口已关闭；清除任务结果请在删除区域查看。");
   }
 
