@@ -6,6 +6,7 @@ import { phaseNames, simulationEvents, sourceNames, speech, statusNames } from "
 import type { SpeechEvent, Utterance } from "../lib/speech";
 import { UtteranceReview } from "./utterance-review";
 import { EvidencePanel } from "./evidence-panel";
+import { CorrectionPanel } from "./corrections/panel";
 
 export function SpeechPanel({ classroom }: { classroom: Classroom }) {
   const [timeline, setTimeline] = useState<Utterance[]>([]);
@@ -88,6 +89,7 @@ export function SpeechPanel({ classroom }: { classroom: Classroom }) {
       <p>上游原文：{item.upstream_text}</p>
       <p>教师修订：{item.teacher_text ?? "未修订"}；核验人：{item.reviewed_by ?? "未核验"}</p>
       <UtteranceReview classroom={classroom} utterance={item} onSaved={refresh} />
+      <CorrectionPanel classroom={classroom} utterance={item} onSaved={refresh} />
       <EvidencePanel classroom={classroom} utterance={item} />
     </article>)}
     <details><summary>已保存事件与接收缺口（{events.length} 条）</summary>
