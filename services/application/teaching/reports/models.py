@@ -31,7 +31,7 @@ class ParentReport(StrictModel):
     student_id: str
     teacher_id: str
     revision: int = 1
-    status: Literal["published", "revoked"] = "published"
+    status: Literal["published", "revoked", "stale"] = "published"
     published_at: datetime
     content: PreviewRequest
 

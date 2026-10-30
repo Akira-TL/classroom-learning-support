@@ -5,6 +5,8 @@ from collections.abc import Iterator
 from contextlib import contextmanager
 from pathlib import Path
 
+from ..classroom.storage import StoreError
+from ..corrections.invalidation import invalidate
 from ..models import StrictModel
 from .models import ReviewRequest, SpeechEvent, Utterance
 
@@ -16,6 +18,12 @@ class ReviewRecord(StrictModel):
 
 class SpeechConflict(ValueError):
     pass
+
+
+def require_classroom(db: sqlite3.Connection, classroom_id: str) -> None:
+    exists = db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='classrooms'").fetchone()
+    if not exists or not db.execute("SELECT 1 FROM classrooms WHERE id=?", (classroom_id,)).fetchone():
+        raise StoreError(410, "课堂不存在或已删除，不能写入语音结果或核验")
 
 
 class SpeechStore:
@@ -64,6 +72,7 @@ class SpeechStore:
         """返回是否记录新事件；重复事件不得更改已核验片段。"""
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
+            require_classroom(db, classroom_id)
             key = (classroom_id, event.session_id, event.event_id)
             previous = db.execute(
                 "SELECT body FROM speech_events WHERE classroom_id=? AND session_id=? AND event_id=?", key
@@ -124,49 +133,64 @@ class SpeechStore:
             question_id=old.question_id if old else None,
         )
         db.execute("INSERT OR REPLACE INTO utterances VALUES (?, ?, ?, ?)", (*key, current.model_dump_json()))
+        if old:
+            invalidate(db, classroom_id, event.session_id, event.segment_id, current.version)
 
     def review(
         self, classroom_id: str, session_id: str, segment_id: str, teacher: str, request: ReviewRequest
     ) -> Utterance:
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
-            key = (classroom_id, session_id, segment_id)
-            row = db.execute(
-                "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?", key
-            ).fetchone()
-            if not row:
-                raise KeyError(segment_id)
-            old = Utterance.model_validate_json(row[0])
-            if old.version != request.expected_version:
-                raise SpeechConflict("发言已变化，请重新核验")
-            if old.phase in {"partial", "withdraw"} and "confirmed" in {
-                request.text_review,
-                request.identity_review,
-                request.question_review,
-            }:
-                raise SpeechConflict("临时或撤回的发言不能确认")
-            current = Utterance.model_validate(
-                old.model_dump()
-                | {
-                    "teacher_text": request.teacher_text,
-                    "student_alias": request.student_alias,
-                    "question_id": request.question_id,
-                    "text_review": request.text_review,
-                    "identity_review": request.identity_review,
-                    "question_review": request.question_review,
-                    "reviewed_by": teacher,
-                    "version": old.version + 1,
-                }
-            )
-            db.execute(
-                "UPDATE utterances SET body=? WHERE classroom_id=? AND session_id=? AND segment_id=?",
-                (current.model_dump_json(), *key),
-            )
-            db.execute(
-                "INSERT INTO speech_reviews VALUES (?, ?, ?, ?, ?)",
-                (*key, current.version, ReviewRecord(actor=teacher, result=current).model_dump_json()),
-            )
-            return current
+            return self.review_in_transaction(db, classroom_id, session_id, segment_id, teacher, request)
+
+    def review_in_transaction(
+        self,
+        db: sqlite3.Connection,
+        classroom_id: str,
+        session_id: str,
+        segment_id: str,
+        teacher: str,
+        request: ReviewRequest,
+    ) -> Utterance:
+        require_classroom(db, classroom_id)
+        key = (classroom_id, session_id, segment_id)
+        row = db.execute(
+            "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?", key
+        ).fetchone()
+        if not row:
+            raise KeyError(segment_id)
+        old = Utterance.model_validate_json(row[0])
+        if old.version != request.expected_version:
+            raise SpeechConflict("发言已变化，请重新核验")
+        if old.phase in {"partial", "withdraw"} and "confirmed" in {
+            request.text_review,
+            request.identity_review,
+            request.question_review,
+        }:
+            raise SpeechConflict("临时或撤回的发言不能确认")
+        current = Utterance.model_validate(
+            old.model_dump()
+            | {
+                "teacher_text": request.teacher_text,
+                "student_alias": request.student_alias,
+                "question_id": request.question_id,
+                "text_review": request.text_review,
+                "identity_review": request.identity_review,
+                "question_review": request.question_review,
+                "reviewed_by": teacher,
+                "version": old.version + 1,
+            }
+        )
+        db.execute(
+            "UPDATE utterances SET body=? WHERE classroom_id=? AND session_id=? AND segment_id=?",
+            (current.model_dump_json(), *key),
+        )
+        db.execute(
+            "INSERT INTO speech_reviews VALUES (?, ?, ?, ?, ?)",
+            (*key, current.version, ReviewRecord(actor=teacher, result=current).model_dump_json()),
+        )
+        invalidate(db, classroom_id, session_id, segment_id, current.version)
+        return current
 
     def history(self, classroom_id: str, session_id: str, segment_id: str) -> list[ReviewRecord]:
         with self.connect() as db:
