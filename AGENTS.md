@@ -10,6 +10,7 @@
 - 普通提交和推送不触发云端 CI；不得自行建立发布工作流。
 - 正式提交通过用户级 `akira` Skill 内置 Guard；按修改目的逐阶段提交。
 - 本机 `.agents/skills/` 由 Skiloom 管理，不纳入 Git，也不直接修改。
+- 语音团队在 `services/speech/` 开发，跨团队协作遵守 `docs/integration/协作开发规范.md`。
 
 ## Agent skills
 

@@ -5,6 +5,7 @@ logs/
 .env.*
 !.env.example
 .venv/
+**/.venv/
 __pycache__/
 node_modules/
 .next/

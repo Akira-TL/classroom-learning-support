@@ -11,6 +11,8 @@
 - [技术路线](docs/planning/技术路线.md)
 - [演示方案](docs/planning/演示方案.md)
 - [语音模块对接契约](docs/integration/语音模块对接契约.md)
+- [协作开发规范](docs/integration/协作开发规范.md)
+- [语音团队开发入口](services/speech/README.md)
 - [上游接入边界研究](docs/research/上游语音能力接入边界.md)
 - [领域词汇](CONTEXT.md)
 
