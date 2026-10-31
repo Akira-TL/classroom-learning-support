@@ -12,7 +12,16 @@ from .audio.store import SpeechStore
 from .care.api import care_router
 from .care.explanations.api import explanations_router
 from .care.tags.api import tag_router
-from .classroom.auth import COOKIE_NAME, AuthSettings, DemoAuth, LoginRequest, User, current_user, require_teacher
+from .classroom.auth import (
+    COOKIE_NAME,
+    AuthSettings,
+    DemoAuth,
+    DemoLoginRequest,
+    LoginRequest,
+    User,
+    current_user,
+    require_teacher,
+)
 from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
 from .corrections.api import corrections_router
@@ -74,9 +83,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     async def store_error(_request: Request, error: StoreError) -> JSONResponse:
         return JSONResponse(status_code=error.status, content={"detail": str(error)})
 
-    @app.post("/api/auth/login", response_model=User)
-    def login(payload: LoginRequest, request: Request, response: Response) -> User:
-        user, token = auth.login(payload)
+    def entered(user: User, token: str, request: Request, response: Response) -> User:
         auth.logout(request.cookies.get(COOKIE_NAME))
         response.set_cookie(
             COOKIE_NAME,
@@ -88,6 +95,16 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
             path="/",
         )
         return user
+
+    @app.post("/api/auth/login", response_model=User)
+    def login(payload: LoginRequest, request: Request, response: Response) -> User:
+        user, token = auth.login(payload)
+        return entered(user, token, request, response)
+
+    @app.post("/api/auth/demo-login", response_model=User)
+    def demo_login(payload: DemoLoginRequest, request: Request, response: Response) -> User:
+        user, token = auth.demo_login(payload)
+        return entered(user, token, request, response)
 
     @app.post("/api/auth/logout", status_code=204)
     def logout(request: Request, response: Response) -> None:
