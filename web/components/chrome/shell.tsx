@@ -37,18 +37,28 @@ export interface ShellProps {
 }
 
 export function Shell({ user, activeView, onNavigate, children, actions }: ShellProps) {
+  const classroomWorkspace = user?.role === "teacher" && ["review", "teaching", "publishing"].includes(activeView);
   const navigation = user
     ? user.role === "teacher" ? teacherNavigation : [roleNavigation[user.role]]
     : [];
 
   return (
-    <div className={`shell-grid${user ? "" : " shell-signed-out"}`}>
+    <div className={`shell-grid${user ? "" : " shell-signed-out"}${classroomWorkspace ? " shell-classroom" : ""}`}>
       <a className="skip-link" href="#app-main-content">跳转到主要内容</a>
       <header className="app-header">
         <div className="app-brand">
           <span className="brand-mark"><AppIcon name="teaching" size={22} /></span>
           <span>课堂学习支持</span>
         </div>
+        {classroomWorkspace && <nav className="classroom-navigation" aria-label="课堂工作区">
+          <button type="button" onClick={() => onNavigate("classrooms")}>← 返回课堂库</button>
+          <button type="button" aria-current={activeView === "review" ? "page" : undefined}
+            onClick={() => onNavigate("review")}>课堂分析</button>
+          <button type="button" aria-current={activeView === "teaching" ? "page" : undefined}
+            onClick={() => onNavigate("teaching")}>AI教学反馈</button>
+          <button type="button" aria-current={activeView === "publishing" ? "page" : undefined}
+            onClick={() => onNavigate("publishing")}>发布反馈</button>
+        </nav>}
         <div className="header-context">
           <span className="environment-badge">演示环境</span>
           {user && <span className="header-user" title={user.id}>
@@ -57,7 +67,7 @@ export function Shell({ user, activeView, onNavigate, children, actions }: Shell
           {actions && <div className="header-actions">{actions}</div>}
         </div>
       </header>
-      {user && <aside className="app-rail">
+      {user && !classroomWorkspace && <aside className="app-rail">
         <nav className="rail-navigation" aria-label="主要功能">
           {navigation.map((item) => <button
             key={item.view}

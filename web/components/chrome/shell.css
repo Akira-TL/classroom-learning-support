@@ -68,6 +68,21 @@
 }
 .rail-note { margin: auto 5px 0; padding-top: 28px; color: #94a0b3; font-size: 11px; text-align: center; }
 .app-content { grid-area: content; min-width: 0; padding: 12px; outline: none; }
+.shell-classroom { grid-template-columns: minmax(0,1fr); grid-template-areas: "header" "content"; }
+.shell-classroom .app-header { padding: 0 28px; gap: 16px; }
+.shell-classroom .app-brand { font-size: 19px; white-space: nowrap; }
+.classroom-navigation { display: flex; align-items: center; gap: 8px; margin-left: auto; }
+.classroom-navigation button { color: #526078; background: transparent; border: 0; border-radius: 5px;
+  font-size: 15px; margin: 0; padding: 10px 14px; white-space: nowrap; }
+.classroom-navigation button[aria-current="page"] { color: #075bd3; background: #edf4ff; font-weight: 650; }
+.shell-classroom .environment-badge { display: none; }
+.shell-classroom .app-content { padding: 14px 28px 28px; }
+@media (max-width: 1000px) {
+  .shell-classroom .app-header { flex-wrap: wrap; height: auto; min-height: 64px; padding: 12px; }
+  .shell-classroom .classroom-navigation { order: 3; width: 100%; margin-left: 0; overflow-x: auto; }
+  .shell-classroom .app-content { padding: 12px; }
+  .shell-classroom .header-context { margin-left: auto; }
+}
 .app-content:focus-visible { outline: 3px solid #82b0ff; outline-offset: -3px; }
 .shell-signed-out { grid-template-columns: minmax(0, 1fr); grid-template-areas: "header" "content"; }
 .shell-signed-out .app-content { display: flex; justify-content: center; align-items: center; padding: 40px 20px; }

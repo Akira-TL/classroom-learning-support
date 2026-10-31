@@ -7,8 +7,7 @@ import type { SpeechEvent, Utterance } from "../lib/speech";
 import { UtteranceReview } from "./utterance-review";
 import { EvidencePanel } from "./evidence-panel";
 import { CorrectionPanel } from "./corrections/panel";
-import { QuestionContext } from "./workspace/question-context";
-import { Timeline } from "./workspace/timeline";
+import { ClassroomAnalysis } from "./workspace/analysis/panel";
 import { segmentKey, timeLabel } from "./workspace/types";
 import type { WorkspaceView } from "./workspace/types";
 import styles from "./workspace/workspace.module.css";
@@ -140,10 +139,8 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       </select></label>
       {current && <span className={styles.sourceBadge}>{sourceNames[current.source_kind]}</span>}
     </div>
-    <div className={view === "review" ? styles.reviewGrid : undefined}>
-      <div hidden={view !== "review"}><QuestionContext classroom={classroom} utterance={current} /></div>
-      <div hidden={view !== "review"}><Timeline classroom={classroom} items={timeline} selected={selected}
-        onSelect={select} onSaved={refresh} active={active && view === "review"} /></div>
+    <ClassroomAnalysis classroom={classroom} items={timeline} current={current} selected={selected}
+      onSelect={select} onSaved={refresh} active={active} view={view}>
       <div className={styles.inspector}>
       {timeline.length === 0 && view !== "review" && <div className={styles.empty}>
         请先接收发言并完成核验，再进入教学支持或发布。
@@ -168,7 +165,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
         </details>
       </article>)}
       </div>
-    </div>
+    </ClassroomAnalysis>
     <details className={styles.replay}><summary>模拟事件回放 · 开发诊断</summary>
       <p>这里只回放合成事件，不采集麦克风、不调用真实语音服务。原音频可另行授权归档。</p>
       <p>样例包含临时转写、定稿、重复事件、断流缺口、恢复、修订和结束；固定讨论平均分与四分之一。</p>
