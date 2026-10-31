@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { batchAudioAssetSchema, recipientExplanationSchema, tagBatchSchema,
-  tagImportSchema, tagSchema } from "./types.ts";
+  tagImportSchema, tagNames, tagSchema } from "./types.ts";
 
 test("导入保留上游标签原值、带时间转写和演示来源，不要求确认发布", () => {
   const value = tagImportSchema.parse({ import_id: "import-1", student_id: "student-01", observed_on: "2026-10-31",
@@ -20,6 +20,23 @@ test("拒绝把外部走神标成声音事实，拒绝逆向时间", () => {
     start_ms: 1000, end_ms: 2000, count: 1 };
   assert.equal(tagSchema.safeParse(tag).success, false);
   assert.equal(tagSchema.safeParse({ ...tag, category: "external_state", end_ms: 500 }).success, false);
+});
+
+test("录制报告的声音事件可分别显示，保留原始标注且不接受外部状态类别", () => {
+  const events = [["sneeze", "打喷嚏"], ["chair_movement", "移动板凳"], ["door_close", "关门声"],
+    ["desk_tap", "拍桌声"], ["pen_drop", "掉笔／摔笔"]] as const;
+  for (const [label, name] of events) {
+    const input = { tag_id: "source-1", label, original_label: `报告：${name}`, category: "audible_event",
+      start_ms: 1000, end_ms: 2000, count: 1 };
+    const tag = tagSchema.parse(input);
+    assert.equal(tag.original_label, input.original_label);
+    assert.equal(tagNames[tag.label], name);
+    assert.equal(tagSchema.safeParse({ ...input, category: "external_state" }).success, false);
+  }
+  for (const label of ["cough", "pen_sound", "snoring"]) {
+    assert.equal(tagSchema.safeParse({ tag_id: "old", label, original_label: "既有标签",
+      category: "external_state", start_ms: 1000, end_ms: 2000, count: 1 }).success, false);
+  }
 });
 
 test("学生家长响应无需内部比较数据，也不能作为教师预览响应使用", () => {

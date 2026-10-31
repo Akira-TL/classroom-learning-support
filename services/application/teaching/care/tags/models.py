@@ -7,7 +7,10 @@ from ...audio.media import AudioAsset
 from ...models import StrictModel
 from ..models import CompareRequest
 
-TagLabel = Literal["cough", "pen_sound", "snoring", "inattention", "sleeping", "other"]
+TagLabel = Literal[
+    "cough", "pen_sound", "snoring", "sneeze", "chair_movement", "door_close", "desk_tap", "pen_drop",
+    "inattention", "sleeping", "other",
+]
 
 
 class TagValue(StrictModel):

@@ -4,7 +4,10 @@ from ..models import CompareRequest
 from .models import TagBatch, TagComparison, TagLabel, TagSummary
 from .store import TagStore
 
-LABELS: tuple[TagLabel, ...] = ("cough", "pen_sound", "snoring", "inattention", "sleeping", "other")
+LABELS: tuple[TagLabel, ...] = (
+    "cough", "pen_sound", "snoring", "sneeze", "chair_movement", "door_close", "desk_tap", "pen_drop",
+    "inattention", "sleeping", "other",
+)
 
 
 def summary(label: TagLabel, baseline: list[TagBatch], current: list[TagBatch]) -> TagSummary:

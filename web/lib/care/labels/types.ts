@@ -3,15 +3,19 @@ export const comparisonRequestSchema = z.object({ student_id: z.string(), baseli
   baseline_end: z.string(), current_start: z.string(), current_end: z.string() });
 export type CompareRequest = z.infer<typeof comparisonRequestSchema>;
 
-export const tagLabelSchema = z.enum(["cough", "pen_sound", "snoring", "inattention", "sleeping", "other"]);
+export const tagLabelSchema = z.enum([
+  "cough", "pen_sound", "snoring", "sneeze", "chair_movement", "door_close", "desk_tap", "pen_drop",
+  "inattention", "sleeping", "other",
+]);
 export const tagSchema = z.object({ tag_id: z.string().min(1).max(100), label: tagLabelSchema,
   original_label: z.string().min(1).max(100), category: z.enum(["audible_event", "external_state"]),
   start_ms: z.number().int().nonnegative(), end_ms: z.number().int().positive(),
   count: z.number().int().min(0).max(10000), note: z.string().max(2000).default(""),
   original_value: z.union([z.number(), z.string()]).nullable().optional() }).strict().superRefine((tag, context) => {
   if (tag.end_ms <= tag.start_ms) context.addIssue({ code: "custom", message: "标签结束时间须晚于开始时间" });
-  if (["inattention", "sleeping"].includes(tag.label) && tag.category !== "external_state") {
-    context.addIssue({ code: "custom", message: "走神和睡觉须标记为外部状态来源" });
+  const expected = ["inattention", "sleeping"].includes(tag.label) ? "external_state" : "audible_event";
+  if (tag.label !== "other" && tag.category !== expected) {
+    context.addIssue({ code: "custom", message: "声音观测与走神、睡觉等外部状态须分别标记" });
   }
 });
 export const tagImportSchema = z.object({ import_id: z.string().min(1).max(100),
@@ -41,7 +45,9 @@ export type TagBatch = z.infer<typeof tagBatchSchema>;
 export type TagComparison = z.infer<typeof tagComparisonSchema>;
 export type TagValue = z.infer<typeof tagSchema>;
 export const tagNames: Record<TagValue["label"], string> = {
-  cough: "咳嗽", pen_sound: "玩笔相关声音", snoring: "打呼噜声", inattention: "走神", sleeping: "睡觉", other: "其他标签",
+  cough: "咳嗽", pen_sound: "玩笔相关声音", snoring: "打呼噜声", sneeze: "打喷嚏", chair_movement: "移动板凳",
+  door_close: "关门声", desk_tap: "拍桌声", pen_drop: "掉笔／摔笔",
+  inattention: "走神", sleeping: "睡觉", other: "其他标签",
 };
 export const perspectives = [["teacher", "教师"], ["head_teacher", "班主任"], ["student", "学生"],
   ["parent", "家长"], ["teaching_director", "教导主任"]] as const;
