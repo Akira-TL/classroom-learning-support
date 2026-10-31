@@ -15,7 +15,7 @@ export class FileStream {
   constructor(private cid: string, private wav: PcmWav, private callbacks: CaptureCallbacks) {}
 
   async start(): Promise<void> {
-    this.session = await inputsApi.create(this.cid, "file_stream", this.wav.sampleRate);
+    this.session = await inputsApi.create(this.cid, "file_stream", this.wav.sampleRate, this.wav.channels);
     this.callbacks.session(this.session);
     if (this.stopping) { await this.finish(true); return; }
     this.origin = performance.now();
@@ -35,7 +35,9 @@ export class FileStream {
         if (this.stopping || this.paused) break;
         const next = await inputsApi.frame(this.cid, this.session.id, {
           sequence: this.session.expected_sequence, start_sample: this.cursor, frame_count: count,
-          pcm_base64: encodePcm(this.wav.pcm.subarray(this.cursor * 2, (this.cursor + count) * 2)),
+          pcm_base64: encodePcm(this.wav.pcm.subarray(
+            this.cursor * this.wav.channels * 2, (this.cursor + count) * this.wav.channels * 2,
+          )),
         });
         if (next.received_samples !== this.cursor + count) throw new Error("服务端确认样本游标异常，已停止发送。");
         this.cursor += count; this.session = next; this.callbacks.session(next);

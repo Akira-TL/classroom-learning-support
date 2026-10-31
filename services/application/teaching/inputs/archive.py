@@ -21,7 +21,7 @@ def verify_archive(audio: AudioStore, session: InputSession, frames: list[bytes]
     asset, path = audio.get(session.classroom_id, session.id)
     expected = b"".join(frames)
     if (
-        asset.source != f"{session.input_mode}_capture_only"
+        asset.source != f"{session.input_mode}_{session.processing_mode}"
         or asset.sample_rate != session.sample_rate
         or asset.channels != session.channels
         or asset.duration_ms != session.received_samples * 1000 // session.sample_rate
@@ -34,7 +34,7 @@ def verify_archive(audio: AudioStore, session: InputSession, frames: list[bytes]
                 and saved.getnchannels() == session.channels
                 and saved.getsampwidth() == 2
                 and saved.getnframes() == session.received_samples
-                and len(expected) == session.received_samples * 2
+                and len(expected) == session.received_samples * session.channels * 2
                 and saved.readframes(saved.getnframes()) == expected
             )
     except (OSError, wave.Error, EOFError):
@@ -52,7 +52,8 @@ def archive_or_recover(audio: AudioStore, session: InputSession, frames: list[by
             raise
     try:
         audio.save(
-            session.classroom_id, session.id, pcm_wav(session, frames), source=f"{session.input_mode}_capture_only"
+            session.classroom_id, session.id, pcm_wav(session, frames),
+            source=f"{session.input_mode}_{session.processing_mode}"
         )
     except StoreError as error:
         if error.status != 409:

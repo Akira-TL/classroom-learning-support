@@ -6,6 +6,7 @@ from uuid import uuid4
 
 from ..audio.media import AudioStore
 from ..classroom.storage import SQLiteStore, StoreError
+from . import upstream
 from .archive import archive_or_recover
 from .models import CreateInput, FinishInput, InputFrame, InputSession, InputState
 
@@ -47,6 +48,10 @@ class InputStore:
             db.execute("BEGIN IMMEDIATE")
             self.owner(db, cid, teacher)
             session = InputSession(**request.model_dump(), id=uuid4().hex, classroom_id=cid)
+            if session.processing_mode == "speech_stream":
+                session = session.model_copy(update={
+                    "speech_session_id": upstream.create(session), "recognizer_connected": True,
+                })
             db.execute("INSERT INTO input_sessions VALUES (?, ?, ?)", (session.id, cid, session.model_dump_json()))
         return session
 
@@ -54,24 +59,32 @@ class InputStore:
         with self.store.connection() as db:
             self.owner(db, cid, teacher)
             rows = db.execute("SELECT body FROM input_sessions WHERE classroom_id=? ORDER BY rowid", (cid,)).fetchall()
-        return [InputSession.model_validate_json(row[0]) for row in rows]
+        sessions = [InputSession.model_validate_json(row[0]) for row in rows]
+        return [self.get(cid, teacher, item.id) if item.forwarding_pending else item for item in sessions]
 
     def get(self, cid: str, teacher: str, sid: str) -> InputSession:
         with self.store.connection() as db:
             self.owner(db, cid, teacher)
-            return self._session(db, cid, sid)
+            session = self._session(db, cid, sid)
+            if session.forwarding_pending:
+                try:
+                    session = session.model_copy(update={"forwarding_pending": upstream.forwarding(session)})
+                except StoreError as error:
+                    session = session.model_copy(update={"speech_error": str(error)})
+                self._save(db, session)
+            return session
 
     def frame(self, cid: str, teacher: str, sid: str, request: InputFrame) -> InputSession:
         try:
             raw = base64.b64decode(request.pcm_base64, validate=True)
         except (binascii.Error, ValueError):
             raise StoreError(422, "PCM帧必须是严格Base64编码") from None
-        if len(raw) != request.frame_count * 2 or len(raw) > 65536:
-            raise StoreError(422, "PCM字节数须等于样本数乘2，且每帧不超过64KB")
         with self.store.connection() as db:
             db.execute("BEGIN IMMEDIATE")
             self.owner(db, cid, teacher)
             session = self._session(db, cid, sid)
+            if len(raw) != request.frame_count * session.channels * 2 or len(raw) > 65536:
+                raise StoreError(422, "PCM字节数须等于每通道样本数乘通道数乘2，且每帧不超过64KB")
             row = db.execute(
                 "SELECT start_sample,frame_count,body FROM input_frames WHERE classroom_id=? "
                 "AND session_id=? AND sequence=?",
@@ -88,8 +101,10 @@ class InputStore:
                     409, f"缺帧或游标不连续，应发送序号{session.expected_sequence}，起始样本{session.received_samples}"
                 )
             samples = session.received_samples + request.frame_count
-            if samples > session.sample_rate * 600 or samples * 2 > AudioStore.max_bytes - 44:
+            if samples > session.sample_rate * 600 or samples * session.channels * 2 > AudioStore.max_bytes - 44:
                 raise StoreError(413, "音频累计超过10分钟或20MB限制，当前帧未接收")
+            if session.speech_session_id:
+                upstream.frame(session, request)
             db.execute(
                 "INSERT INTO input_frames VALUES (?, ?, ?, ?, ?, ?)",
                 (cid, sid, request.sequence, request.start_sample, request.frame_count, raw),
@@ -121,6 +136,8 @@ class InputStore:
             if session.status in {"ended", "failed", "finishing"}:
                 return session
             if request.interrupted or session.received_samples == 0:
+                if session.speech_session_id:
+                    upstream.finish(session)
                 session = session.model_copy(
                     update={"status": "failed", "error": "音频接收中断或没有样本，未作完整归档"}
                 )
@@ -135,6 +152,9 @@ class InputStore:
         asset = None
         failure: str | None = None
         try:
+            if session.speech_session_id:
+                upstream.finish(session)
+                session = session.model_copy(update={"forwarding_pending": upstream.forwarding(session)})
             asset = archive_or_recover(self.audio, session, frames)
         except StoreError as error:
             if error.status == 410:
@@ -153,6 +173,7 @@ class InputStore:
                     "status": "failed" if failure else "ended",
                     "audio_asset": asset,
                     "error": failure,
+                    "forwarding_pending": session.forwarding_pending,
                 }
             )
             self._save(db, session)
@@ -163,13 +184,16 @@ class InputStore:
             db.execute("BEGIN IMMEDIATE")
             self.owner(db, cid, teacher)
             session = self._session(db, cid, sid)
-            if session.status != "finishing":
+            if session.status != "finishing" and not (session.status == "failed" and session.speech_session_id):
                 raise StoreError(409, "只有归档进行中状态可手动恢复")
             rows = db.execute(
                 "SELECT body FROM input_frames WHERE classroom_id=? AND session_id=? ORDER BY sequence", (cid, sid)
             ).fetchall()
             frames = [row[0] for row in rows]
         try:
+            if session.speech_session_id:
+                upstream.finish(session)
+                session = session.model_copy(update={"forwarding_pending": upstream.forwarding(session)})
             asset = archive_or_recover(self.audio, session, frames)
         except (StoreError, OSError) as error:
             with self.store.connection() as db:
@@ -185,9 +209,12 @@ class InputStore:
                 if current.audio_asset != asset:
                     raise StoreError(409, "恢复结果与当前归档不一致")
                 return current
-            if current.status != "finishing":
+            if current.status != "finishing" and not (current.status == "failed" and current.speech_session_id):
                 raise StoreError(409, "会话状态已变化，不能恢复")
-            current = current.model_copy(update={"status": "ended", "audio_asset": asset, "error": None})
+            current = current.model_copy(update={
+                "status": "ended", "audio_asset": asset, "error": None,
+                "forwarding_pending": session.forwarding_pending,
+            })
             self._save(db, current)
         return current
 

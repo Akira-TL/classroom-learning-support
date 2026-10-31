@@ -27,7 +27,7 @@ export class MicrophoneCapture {
   async start(): Promise<void> {
     try {
       if (!navigator.mediaDevices?.getUserMedia) throw new Error("当前浏览器或地址不支持麦克风，请使用安全上下文。");
-      this.context = new AudioContext();
+      this.context = new AudioContext({ sampleRate: 16000 });
       const stream = await navigator.mediaDevices.getUserMedia({ audio: { channelCount: 1 } });
       if (this.stopping) { stream.getTracks().forEach((track) => track.stop()); return; }
       this.stream = stream;

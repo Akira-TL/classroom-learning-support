@@ -2,8 +2,10 @@ import { z } from "zod";
 
 export const inputSessionSchema = z.object({
   id: z.string(), classroom_id: z.string(), input_mode: z.enum(["microphone", "file_stream"]),
-  processing_mode: z.literal("capture_only"), recognizer_connected: z.literal(false),
-  encoding: z.literal("pcm_s16le"), sample_rate: z.number().int().min(8000).max(48000), channels: z.literal(1),
+  processing_mode: z.enum(["capture_only", "speech_stream"]), recognizer_connected: z.boolean(),
+  speech_session_id: z.string().nullable(), forwarding_pending: z.boolean(), speech_error: z.string().nullable(),
+  encoding: z.literal("pcm_s16le"), sample_rate: z.number().int().min(8000).max(48000),
+  channels: z.union([z.literal(1), z.literal(2)]),
   status: z.enum(["recording", "paused", "finishing", "ended", "failed"]),
   received_samples: z.number().int().nonnegative(), expected_sequence: z.number().int().nonnegative(),
   audio_asset: z.object({
