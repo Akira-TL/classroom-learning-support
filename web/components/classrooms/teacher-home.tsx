@@ -50,7 +50,8 @@ export function TeacherHome(props: Props) {
     <section hidden={view === "classrooms"} aria-label="教师工作区">
       {selected ? <>
         <h1 className="sr-only">{selected.title}</h1>
-        <SpeechPanel key={selected.id} classroom={selected} view={workspaceView} onViewChange={props.onView} />
+        <SpeechPanel key={selected.id} classroom={selected} view={workspaceView}
+          active={view !== "classrooms"} onViewChange={props.onView} />
         <div hidden={view !== "teaching"}>
           <details className="surface-card classroom-tools"><summary>人工通用练习 · 无需个人学习证据</summary>
             <ManualExercises key={selected.id} classroomId={selected.id} /></details>

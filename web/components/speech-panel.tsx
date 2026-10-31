@@ -13,8 +13,8 @@ import { segmentKey, timeLabel } from "./workspace/types";
 import type { WorkspaceView } from "./workspace/types";
 import styles from "./workspace/workspace.module.css";
 
-export function SpeechPanel({ classroom, view = "review", onViewChange }: {
-  classroom: Classroom; view?: WorkspaceView; onViewChange?: (view: WorkspaceView) => void;
+export function SpeechPanel({ classroom, view = "review", active = true, onViewChange }: {
+  classroom: Classroom; view?: WorkspaceView; active?: boolean; onViewChange?: (view: WorkspaceView) => void;
 }) {
   const [timeline, setTimeline] = useState<Utterance[]>([]);
   const [events, setEvents] = useState<SpeechEvent[]>([]);
@@ -131,7 +131,7 @@ export function SpeechPanel({ classroom, view = "review", onViewChange }: {
     <div className={view === "review" ? styles.reviewGrid : undefined}>
       <div hidden={view !== "review"}><QuestionContext classroom={classroom} utterance={current} /></div>
       <div hidden={view !== "review"}><Timeline classroom={classroom} items={timeline} selected={selected}
-        onSelect={select} onSaved={refresh} active={view === "review"} /></div>
+        onSelect={select} onSaved={refresh} active={active && view === "review"} /></div>
       <div className={styles.inspector}>
       {timeline.length === 0 && view !== "review" && <div className={styles.empty}>
         请先接收发言并完成核验，再进入教学支持或发布。
