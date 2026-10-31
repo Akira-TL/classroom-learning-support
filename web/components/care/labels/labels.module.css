@@ -31,6 +31,7 @@
 .seats small { display: block; margin: 0; white-space: nowrap; font-size: 12px; font-weight: 400; }
 .blackboard { text-align: center; color: #6a7f9b; background: #eaf0f7; border-radius: 5px; margin: 10px 20% 0; }
 .detail { display: grid; gap: 18px; }
+.empty > details { border: 0; padding: 0; margin: 0; }
 .windows { display: grid; grid-template-columns: minmax(320px,.9fr) minmax(0,1.1fr); gap: 20px; align-items: start; }
 .windows > section { position: sticky; top: 80px; }
 @media (max-width: 1000px) { .windows { grid-template-columns: 1fr; } .windows > section { position: static; } }
