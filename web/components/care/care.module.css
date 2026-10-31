@@ -1,6 +1,8 @@
-.page { color: #20324d; line-height: 1.75; }
-.heading { margin: 4px 0 20px; }
-.heading h1 { font-size: 26px; margin-bottom: 6px; }
+.page { color: #20324d; line-height: 1.75; height: 100%; min-height: 0;
+  display: flex; flex-direction: column; overflow: hidden; }
+.heading { margin: 0 0 12px; flex: 0 0 auto; display: flex; align-items: baseline; flex-wrap: wrap; gap: 6px 16px; }
+.heading h1 { font-size: 23px; margin: 0; }
+.heading p { margin: 0; }
 .heading p, .muted { color: #78879d; font-size: 13px; }
 .layout { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 20px; align-items: start; }
 .roster, .card { background: #fff; border: 1px solid #dfe7f1; border-radius: 10px; padding: 20px; min-width: 0; }
@@ -26,7 +28,14 @@
 .metrics { width: 100%; border-collapse: collapse; font-size: 14px; }
 .metrics th, .metrics td { border-bottom: 1px solid #e7edf4; padding: 9px; text-align: left; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-.reader { margin: 24px 0; }
+.reader { margin: 0; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.readerHeader { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between;
+  gap: 8px; flex: 0 0 auto; margin-bottom: 12px; }
+.readerHeader h2 { margin: 0; }
+.readerHeader button { margin: 0; }
+.readerBody { min-height: 0; flex: 1; overflow: auto; overscroll-behavior: contain;
+  scrollbar-gutter: stable; padding-right: 4px; }
+.readerBody:focus-visible { outline: 2px solid #82b0ff; outline-offset: -2px; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 160px minmax(0,1fr); } .periods { grid-template-columns: 1fr; }
 }

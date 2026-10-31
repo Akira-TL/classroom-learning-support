@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Classroom } from "../../../lib/types";
 import { labelsApi } from "../../../lib/care/labels/api";
 import { sameComparisonScope, weekPeriods } from "../../../lib/care/periods";
@@ -27,6 +27,9 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
   const [explanation, setExplanation] = useState<AutoExplanation | null>(null);
   const [reportError, setReportError] = useState("");
   const [generating, setGenerating] = useState(false);
+  const [tab, setTab] = useState<"report" | "comparison" | "records">("report");
+  const scrollArea = useRef<HTMLDivElement>(null);
+  useEffect(() => { scrollArea.current?.scrollTo({ top: 0, behavior: "auto" }); }, [tab, perspective, student]);
   const request = { student_id: student, ...periods };
   const current = comparison && sameComparisonScope(comparison.periods, request) ? comparison : null;
   const hasData = Boolean(current && (current.baseline.length > 0 || current.current.length > 0));
@@ -56,36 +59,47 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
     return () => { cancelled = true; };
   }, [student, periods, active, refresh]);
   return <div className={styles.detail}>
-    <section className={common.card}><div className={common.actions}>
+    <header className={styles.detailHeader}><div className={common.actions}>
       <h2>学生{student.replace(/^student-/, "")} · 历史标签与变化</h2>
       <button type="button" onClick={() => setRefresh((value) => value + 1)}>刷新数据</button>
-    </div><p>查看上周与本周的状态变化。</p>
+    </div>
+      <div className={styles.perspectives} role="group" aria-label="切换报告预览视角">
+        {perspectives.map(([value, label]) => <button type="button" key={value} aria-pressed={perspective === value}
+          onClick={() => { setPerspective(value); setTab("report"); }}>{label}</button>)}
+      </div>
+    </header>
+    <nav className={styles.detailTabs} aria-label="学生信息内容">
+      {([["report", "报告解读"], ["comparison", "变化统计"], ["records", "声音记录"]] as const)
+        .map(([value, label]) => <button key={value} type="button" aria-pressed={tab === value}
+          onClick={() => setTab(value)}>{label}</button>)}
+    </nav>
+    <div ref={scrollArea} className={styles.detailScroll} tabIndex={0} aria-label="学生信息内容区">
+    <section hidden={tab !== "records"} className={styles.settings}>
     <details><summary>选择上周、本周日期</summary><div className={common.periods}>
       {Object.entries(periods).map(([key, value]) => <label key={key}>{dateLabels[key]}
         <input type="date" value={value} onChange={(event) => setPeriods({ ...periods, [key]: event.target.value })} />
       </label>)}
-    </div></details>{error && <p role="alert">{error}</p>}</section>
+    </div></details></section>
+    {error && <p role="alert">{error}</p>}
     {current && !hasData && <section className={`${common.card} ${styles.empty}`}><h2>等待导入标签</h2>
       <p>导入所选学生的标签、时间戳和对应会话后，将显示上周与本周的变化。尚无数据不表示零次。</p>
       <LabelImport classroomId={classroom.id} student={student} onSaved={() => setRefresh((value) => value + 1)} />
     </section>}
     {!current && !error && <p role="status">正在读取标签记录…</p>}
-    {hasData && <LabelImport classroomId={classroom.id} student={student}
-      onSaved={() => setRefresh((value) => value + 1)} />}
+    {hasData && <div hidden={tab !== "records"}><LabelImport classroomId={classroom.id} student={student}
+      onSaved={() => setRefresh((value) => value + 1)} /></div>}
     {!current && error && <LabelImport classroomId={classroom.id} student={student}
       onSaved={() => setRefresh((value) => value + 1)} />}
-    <section className={common.card}><h2>报告视角</h2>
-      <div className={styles.perspectives} role="group" aria-label="切换报告预览视角">
-        {perspectives.map(([value, label]) => <button type="button" key={value} aria-pressed={perspective === value}
-          onClick={() => setPerspective(value)}>{label}</button>)}
-      </div>{!demonstration && <p className={common.muted}>
-        教师预览不同对象的解释，实际学生与家长账号只访问本人或绑定孩子的报告。</p>}
-    </section>
+    {!demonstration && tab === "report" && <p className={common.muted}>
+      教师预览不同对象的解释，实际学生与家长账号只访问本人或绑定孩子的报告。</p>}
+    <div hidden={tab !== "report"}>
     {generating && <section className={common.card}><p role="status">正在生成报告…</p></section>}
     {reportError && <section className={common.card}><p role="alert">{reportError}</p>
       <button type="button" onClick={() => setRefresh((value) => value + 1)}>重试读取与解释</button></section>}
     {explanation && explanation.perspective === perspective && <AutomaticReport result={explanation} />}
-    {hasData && current && current.summaries.length > 0 && <div className={styles.summary}>
+    </div>
+    {hasData && current && current.summaries.length > 0
+      && <div hidden={tab !== "comparison"} className={styles.summary}>
       {current.summaries.filter((summary) => !demonstration
         || summary.baseline_count !== 0 || summary.current_count !== 0)
         .map((summary) => <article key={summary.label}><h3>{tagNames[summary.label]}</h3>
@@ -99,13 +113,14 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
         {!demonstration && summary.notes.map((note, index) => <p key={index}>{note}</p>)}
       </article>)}
     </div>}
-    {hasData && <div className={styles.periods}>
-      <LabelPeriod title="上周时间分布" batches={current?.baseline ?? []} active={active}
+    {hasData && <div hidden={tab !== "records"} className={styles.periods}>
+      <LabelPeriod title="上周时间分布" batches={current?.baseline ?? []} active={active && tab === "records"}
         allowAudio={perspective !== "teaching_director"} onSaved={() => setRefresh((value) => value + 1)} />
-      <LabelPeriod title="本周时间分布" batches={current?.current ?? []} active={active}
+      <LabelPeriod title="本周时间分布" batches={current?.current ?? []} active={active && tab === "records"}
         allowAudio={perspective !== "teaching_director"} onSaved={() => setRefresh((value) => value + 1)} />
     </div>}
-    {hasData && !demonstration && current?.notes.map((note, index) => <p className={common.muted} key={index}>
+    {hasData && !demonstration && tab !== "report" && current?.notes.map((note, index) =>
+      <p className={common.muted} key={index}>
       {note}</p>)}
-  </div>;
+  </div></div>;
 }
