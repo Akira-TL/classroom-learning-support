@@ -7,6 +7,5 @@ export function AutomaticReport({ result }: { result: AutoExplanation | Recipien
     <h3>变化说明</h3><p>{result.content.change_explanation}</p>
     <h3>需要了解与核实</h3><ul>{result.content.followup_questions.map((question, index) => <li key={index}>
       {question}</li>)}</ul><h3>后续建议</h3><p>{result.content.followup}</p>
-    <small className={styles.muted}>基于所提供资料自动生成 · 模型 {result.model}</small>
   </article>;
 }

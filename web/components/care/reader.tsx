@@ -36,7 +36,6 @@ export function CareReader({ audience, studentId }: { audience: "student" | "par
   }, [studentId, audience, periods, refresh]);
   return <section className={`${styles.card} ${styles.reader}`} aria-label="学生信息自动报告">
     <h2>{audience === "student" ? "我的课堂信息" : "孩子的课堂信息"}</h2>
-    <p className={styles.muted}>根据当前账号关联学生的资料自动生成，无需教师发布。</p>
     <details><summary>比较日期</summary><div className={styles.periods}>
       <label>上期开始<input type="date" value={periods.baseline_start}
         onChange={(event) => setPeriods({ ...periods, baseline_start: event.target.value })} /></label>

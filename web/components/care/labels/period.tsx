@@ -18,13 +18,14 @@ export function LabelPeriod({ title, batches, active, allowAudio, onSaved }: {
     {batches.length === 0 && <p>尚未导入该时段标签，不能记为零次。</p>}
     {batches.map((batch) => {
       const extent = batch.captured_duration_ms ?? Math.max(...batch.tags.map((tag) => tag.end_ms), 1);
+      const demonstration = batch.data_origin === "demonstration";
       return <article key={batch.id} className={styles.batch}>
         <header><time>{batch.observed_on}</time>
-          <span>{batch.data_origin === "demonstration" ? "演示样例" : "提供的标注"}</span></header>
-        <p>{batch.source_name} · 来源版本 {batch.source_version}</p>
-        <p>{batch.source_description}</p>
+          {!demonstration && <span>提供的标注</span>}</header>
+        {!demonstration && <><p>{batch.source_name} · 来源版本 {batch.source_version}</p>
+          <p>{batch.source_description}</p></>}
         <p className={styles.muted}>{batch.captured_duration_ms === null
-          ? "采集时长未提供，时间条仅覆盖已标注范围" : `已提供采集时长 ${timeLabel(batch.captured_duration_ms)}`}</p>
+          ? "完整时长未知" : `时长 ${timeLabel(batch.captured_duration_ms)}`}</p>
         <div className={styles.timeline} aria-label={`${title}标签时间分布`}>
           {batch.tags.map((tag) => <button key={tag.tag_id} type="button"
             aria-label={`${tag.original_label} ${timeLabel(tag.start_ms)}至${timeLabel(tag.end_ms)}`}
@@ -37,8 +38,9 @@ export function LabelPeriod({ title, batches, active, allowAudio, onSaved }: {
           <button type="button" aria-pressed={selected === `${batch.id}/${tag.tag_id}`}
             onClick={() => select(batch, tag)}>{tagNames[tag.label]} · {tag.count} 次 ·
             {timeLabel(tag.start_ms)}—{timeLabel(tag.end_ms)}</button>
-          {tag.category === "external_state" && <p>外部状态标签，来源待核实；声音本身不能证明{tag.original_label}。</p>}
-          {tag.note && <p>{tag.note}</p>}
+          {!demonstration && tag.category === "external_state"
+            && <p>外部状态标签，来源待核实；声音本身不能证明{tag.original_label}。</p>}
+          {!demonstration && tag.note && <p>{tag.note}</p>}
           {selected === `${batch.id}/${tag.tag_id}` && <>
             {allowAudio && batch.transcripts.filter((line) => line.start_ms < tag.end_ms
               && line.end_ms > tag.start_ms).map((line, index) => <blockquote key={index}>
