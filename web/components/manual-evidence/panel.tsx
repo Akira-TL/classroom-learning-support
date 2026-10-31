@@ -5,6 +5,7 @@ import { manualEvidenceApi } from "../../lib/manual-evidence/api";
 import type { ManualEvidenceRequest } from "../../lib/manual-evidence/api";
 import { evidenceContentSchema } from "../../lib/evidence";
 import type { Utterance } from "../../lib/speech";
+import "../presentation/role-panels.css";
 
 export function ManualEvidencePanel({ classroomId, utterance, onSaved }: {
   classroomId: string; utterance: Utterance; onSaved: () => Promise<void>;
@@ -57,9 +58,10 @@ export function ManualEvidencePanel({ classroomId, utterance, onSaved }: {
     } finally { setBusy(false); }
   }
 
-  return <section aria-label="教师人工录入学习证据">
-    <h4>教师人工录入学习证据</h4>
-    <p>由教师填写解释、局限和跟进问题；本操作不调用 DeepSeek，保存后仍需独立确认。</p>
+  return <section className="support-panel manual-evidence-panel" aria-label="教师人工录入学习证据">
+    <header className="panel-heading"><h4>教师人工录入</h4>
+      <span className="status-badge">人工来源 · 不调用模型</span></header>
+    <p className="panel-intro">填写本次回答的解释、证据局限与跟进问题，保存后仍需独立确认。</p>
     {!verified && <p>须先分别核验发言文字、身份与题目；临时、撤回或无法判断的发言不能录入个人证据。</p>}
     {stale && <p role="alert">发言或来源已有变化，编辑保留。核对并载入最新原话后再保存。</p>}
     {error && <p role="alert">{error} 版本冲突不会自动覆盖，缺少图形时请先补充题目。</p>}
@@ -73,7 +75,7 @@ export function ManualEvidencePanel({ classroomId, utterance, onSaved }: {
         onChange={(event) => edit(event.target.value, "limitation")} /></label>
       <label>跟进问题<textarea maxLength={1000} value={followUp}
         onChange={(event) => edit(event.target.value, "followUp")} /></label>
-      <button type="button" disabled={!verified || stale} onClick={() => void save()}>
+      <button className="primary-button" type="button" disabled={!verified || stale} onClick={() => void save()}>
         {attempt ? "重试同一次人工保存请求" : "保存教师人工初稿"}
       </button>
       <button type="button" onClick={() => {
