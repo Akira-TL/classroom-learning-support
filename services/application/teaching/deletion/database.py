@@ -5,6 +5,8 @@ from .models import Resource
 DIRECT_TABLES = (
     "care_observations",
     "care_reports",
+    "care_tag_batches",
+    "care_explanations",
     "audio_assets",
     "input_frames",
     "input_sessions",
@@ -37,6 +39,15 @@ HISTORY_TABLES = (
 def clear_database(db: sqlite3.Connection, cid: str) -> list[Resource]:
     tables = {row[0] for row in db.execute("SELECT name FROM sqlite_master WHERE type='table'")}
     resources: list[Resource] = []
+    if "care_explanations" in tables:
+        # 跨周比较可引用另一课堂；删除来源课堂时同时清除携带其标签的缓存。
+        db.execute(
+            "DELETE FROM care_explanations WHERE classroom_id=? OR EXISTS "
+            "(SELECT 1 FROM json_each(body,'$.comparison.baseline') "
+            "WHERE json_extract(value,'$.classroom_id')=?) OR EXISTS "
+            "(SELECT 1 FROM json_each(body,'$.comparison.current') "
+            "WHERE json_extract(value,'$.classroom_id')=?)", (cid, cid, cid),
+        )
     if "audio_assets" in tables:
         resources.extend(
             Resource(kind="audio", id=row[0])
