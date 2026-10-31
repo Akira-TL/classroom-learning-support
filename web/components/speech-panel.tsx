@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Classroom } from "../lib/types";
 import { phaseNames, simulationEvents, sourceNames, speech, statusNames } from "../lib/speech";
 import type { SpeechEvent, Utterance } from "../lib/speech";
@@ -25,6 +25,8 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selection, setSelection] = useState("");
+  const refreshSequence = useRef(0);
+  const [streamError, setStreamError] = useState("");
   const preferred = timeline.filter((item) => ["final", "revision"].includes(item.phase)
     && [item.text_review, item.identity_review, item.question_review].every((state) => state === "confirmed"))
     .at(-1) ?? timeline.at(-1);
@@ -67,22 +69,31 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   }, [timeline, onViewChange]);
 
   async function refresh() {
+    const sequence = ++refreshSequence.current;
     const [nextTimeline, nextEvents] = await Promise.all([
       speech.timeline(classroom.id), speech.events(classroom.id),
     ]);
-    setTimeline(nextTimeline); setEvents(nextEvents);
+    if (sequence === refreshSequence.current) {
+      setTimeline(nextTimeline); setEvents(nextEvents);
+    }
   }
 
   useEffect(() => {
-    let active = true;
-    Promise.all([speech.timeline(classroom.id), speech.events(classroom.id)])
-      .then(([nextTimeline, nextEvents]) => {
-        if (active) { setTimeline(nextTimeline); setEvents(nextEvents); }
-      }).catch((failure: unknown) => {
-        if (active) setError(failure instanceof Error ? failure.message : "语音记录读取失败。");
-      });
-    return () => { active = false; };
-  }, [classroom.id]);
+    if (!active || busy) return;
+    let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    async function poll() {
+      try {
+        await refresh();
+        if (!cancelled) setStreamError("");
+      } catch (failure) {
+        if (!cancelled) setStreamError(failure instanceof Error ? failure.message : "语音记录读取失败。");
+      }
+      if (!cancelled) timer = setTimeout(() => void poll(), 2000);
+    }
+    void poll();
+    return () => { cancelled = true; ++refreshSequence.current; clearTimeout(timer); };
+  }, [classroom.id, active, busy]);
 
   useEffect(() => {
     if (!running || busy || index >= plan.length) return;
@@ -116,6 +127,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       <button disabled={busy} onClick={() => void manualRefresh()}>刷新来源</button>
     </header>
     {error && <p role="alert">{error} 继续会使用同一事件标识重试，不会假装成功。</p>}
+    {streamError && <p role="status">{streamError} 正在自动重连，当前保留上次收到的记录。</p>}
     <div hidden={view === "review"} className={styles.selection}>
       <label>当前发言<select value={selected} onChange={(event) => {
         const item = timeline.find((entry) => segmentKey(entry) === event.target.value);
@@ -176,7 +188,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
         会话 {item.session_id}；序号 {item.sequence}；
         {item.event_type === "status" || item.event_type === "end"
           ? item.status ? statusNames[item.status] : "结束事件"
-          : phaseNames[item.event_type]}；来源：{sourceNames[item.source_kind]}
+          : item.event_type === "metadata" ? "语音处理元数据" : phaseNames[item.event_type]}；来源：{sourceNames[item.source_kind]}
         {item.gap_start_ms !== null && <>；缺失区间 {item.gap_start_ms}—{item.gap_end_ms} 毫秒</>}
       </li>)}</ul>
     </details>

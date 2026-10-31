@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Utterance } from "../lib/speech";
 import styles from "./workspace/workspace.module.css";
+import { NativeAudio } from "./workspace/speech/native-audio";
 
 const assetSchema = z.object({ id: z.string(), duration_ms: z.number(), source: z.literal("teacher_uploaded_audio") });
 const errorSchema = z.object({ detail: z.string() });
@@ -40,6 +41,7 @@ export function AudioPanel({ classroomId, utterance, onSaved, active = true }: {
     } finally { setBusy(false); }
   }
 
+  if (utterance.native_event) return <NativeAudio classroomId={classroomId} utterance={utterance} active={active} />;
   return <div className={styles.audio}>
     {utterance.audio_available ? <>
       <p className={styles.muted}>已归档原音频 · 定位到 {utterance.start_ms}—{utterance.end_ms} 毫秒</p>
