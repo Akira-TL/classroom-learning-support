@@ -4,6 +4,7 @@ from typing import Literal, Self
 
 from pydantic import Field, model_validator
 
+from ..integration.native_models import NativeSpeechEvent
 from ..models import StrictModel
 
 
@@ -12,7 +13,8 @@ class SpeechEvent(StrictModel):
     session_id: str = Field(min_length=1, max_length=80)
     event_id: str = Field(min_length=1, max_length=80)
     sequence: int = Field(ge=0)
-    event_type: Literal["partial", "final", "revision", "withdraw", "status", "end"]
+    event_type: Literal["partial", "final", "revision", "withdraw", "status", "end", "metadata"]
+    native_event: NativeSpeechEvent | None = None
     source_kind: Literal["synthetic", "recorded_result", "upstream_live"]
     segment_id: str | None = Field(default=None, min_length=1, max_length=80)
     revision: int = Field(default=1, ge=1)
@@ -31,7 +33,9 @@ class SpeechEvent(StrictModel):
             raise ValueError("结束时间不能早于开始时间")
         if self.event_type in {"partial", "final", "revision", "withdraw"} and not self.segment_id:
             raise ValueError("发言事件缺少片段标识")
-        if self.event_type in {"partial", "final", "revision"} and not self.text:
+        if self.event_type in {"partial", "final", "revision"} and not self.text and not (
+            self.native_event and self.native_event.reliability_state in {"failed", "undetermined"}
+        ):
             raise ValueError("转写事件不能缺少文字")
         if self.event_type == "status" and not self.status:
             raise ValueError("状态事件缺少状态")
@@ -43,6 +47,7 @@ class SpeechEvent(StrictModel):
 
 
 class Utterance(StrictModel):
+    native_event: NativeSpeechEvent | None = None
     session_id: str
     segment_id: str
     revision: int

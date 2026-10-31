@@ -98,8 +98,35 @@ class SpeechStore:
             "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?", key
         ).fetchone()
         old = Utterance.model_validate_json(row[0]) if row else None
+        if event.event_type == "metadata":
+            if old and event.native_event and event.native_event.sources and old.native_event:
+                if event.sequence < old.sequence and old.native_event.sources:
+                    return
+                merged = old.native_event.model_copy(update={"sources": event.native_event.sources})
+                current = old.model_copy(update={
+                    "native_event": merged, "sequence": max(old.sequence, event.sequence), "version": old.version + 1,
+                    "text_review": "pending", "identity_review": "pending", "question_review": "pending",
+                    "reviewed_by": None,
+                })
+                db.execute("UPDATE utterances SET body=? WHERE classroom_id=? AND session_id=? AND segment_id=?",
+                           (current.model_dump_json(), *key))
+                invalidate(db, classroom_id, event.session_id, event.segment_id, current.version)
+            return
         if event.event_type not in {"partial", "final", "revision", "withdraw"}:
             return
+        native = event.native_event
+        if native and not native.sources:
+            previous = db.execute(
+                "SELECT body FROM speech_events WHERE classroom_id=? AND session_id=? ORDER BY rowid DESC",
+                (classroom_id, event.session_id),
+            ).fetchall()
+            source_events = sorted((SpeechEvent.model_validate_json(row[0]) for row in previous),
+                                   key=lambda item: item.sequence, reverse=True)
+            for source_event in source_events:
+                if (source_event.segment_id == event.segment_id and source_event.native_event
+                        and source_event.native_event.sources):
+                    native = native.model_copy(update={"sources": source_event.native_event.sources})
+                    break
         if old:
             if event.revision < old.revision:
                 return
@@ -118,12 +145,14 @@ class SpeechStore:
                             and event.source_ref == old.source_ref
                             and event.overlap == old.overlap
                             and event.source_kind == old.source_kind
+                            and native == old.native_event
                         ):
                             return
                         raise SpeechConflict("同修订号的定稿快照不一致，需要递增修订号")
                 elif old.phase != "partial":
                     raise SpeechConflict("定稿后变更必须递增修订号")
         current = Utterance(
+            native_event=native,
             session_id=event.session_id,
             segment_id=event.segment_id,
             revision=event.revision,
@@ -132,7 +161,7 @@ class SpeechStore:
             source_kind=event.source_kind,
             start_ms=event.start_ms,
             end_ms=event.end_ms,
-            upstream_text=event.text or (old.upstream_text if old else ""),
+            upstream_text=event.text or ("" if native else old.upstream_text if old else ""),
             source_ref=event.source_ref,
             overlap=event.overlap,
             version=old.version + 1 if old else 1,
@@ -143,6 +172,27 @@ class SpeechStore:
         db.execute("INSERT OR REPLACE INTO utterances VALUES (?, ?, ?, ?)", (*key, current.model_dump_json()))
         if old:
             invalidate(db, classroom_id, event.session_id, event.segment_id, current.version)
+        if native and native.replaces:
+            for index, replaced_id in enumerate(native.replaces.segments):
+                if replaced_id == event.segment_id:
+                    continue
+                replaced_key = (classroom_id, event.session_id, replaced_id)
+                replaced_row = db.execute(
+                    "SELECT body FROM utterances WHERE classroom_id=? AND session_id=? AND segment_id=?",
+                    replaced_key,
+                ).fetchone()
+                if replaced_row:
+                    replaced = Utterance.model_validate_json(replaced_row[0])
+                    if native.replaces.revisions and replaced.revision > native.replaces.revisions[index]:
+                        continue
+                    withdrawn = replaced.model_copy(update={
+                        "phase": "withdraw", "version": replaced.version + 1,
+                        "text_review": "pending", "identity_review": "pending", "question_review": "pending",
+                        "reviewed_by": None,
+                    })
+                    db.execute("UPDATE utterances SET body=? WHERE classroom_id=? AND session_id=? AND segment_id=?",
+                               (withdrawn.model_dump_json(), *replaced_key))
+                    invalidate(db, classroom_id, event.session_id, replaced_id, withdrawn.version)
 
     def review(
         self, classroom_id: str, session_id: str, segment_id: str, teacher: str, request: ReviewRequest
@@ -170,6 +220,8 @@ class SpeechStore:
         old = Utterance.model_validate_json(row[0])
         if old.version != request.expected_version:
             raise SpeechConflict("发言已变化，请重新核验")
+        if request.text_review == "confirmed" and not (request.teacher_text or old.upstream_text):
+            raise SpeechConflict("识别未提供文字，请先回听并补充教师核验文字")
         if old.phase in {"partial", "withdraw"} and "confirmed" in {
             request.text_review,
             request.identity_review,
