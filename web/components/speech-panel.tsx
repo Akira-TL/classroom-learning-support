@@ -8,6 +8,7 @@ import { UtteranceReview } from "./utterance-review";
 import { EvidencePanel } from "./evidence-panel";
 import { CorrectionPanel } from "./corrections/panel";
 import { ClassroomAnalysis } from "./workspace/analysis/panel";
+import { SpeechRefreshState } from "./workspace/speech/refresh-state";
 import { segmentKey, timeLabel } from "./workspace/types";
 import type { WorkspaceView } from "./workspace/types";
 import styles from "./workspace/workspace.module.css";
@@ -24,7 +25,8 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selection, setSelection] = useState("");
-  const refreshSequence = useRef(0);
+  const refreshState = useRef(new SpeechRefreshState());
+  refreshState.current.busy = busy;
   const [streamError, setStreamError] = useState("");
   const preferred = timeline.filter((item) => ["final", "revision"].includes(item.phase)
     && [item.text_review, item.identity_review, item.question_review].every((state) => state === "confirmed"))
@@ -68,20 +70,23 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   }, [timeline, onViewChange]);
 
   async function refresh() {
-    const sequence = ++refreshSequence.current;
+    const sequence = refreshState.current.begin();
     const [nextTimeline, nextEvents] = await Promise.all([
       speech.timeline(classroom.id), speech.events(classroom.id),
     ]);
-    if (sequence === refreshSequence.current) {
+    if (refreshState.current.accepts(sequence)) {
       setTimeline(nextTimeline); setEvents(nextEvents);
     }
   }
 
   useEffect(() => {
-    if (!active || busy) return;
+    if (!active) return;
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     async function poll() {
+      if (refreshState.current.busy) {
+        timer = setTimeout(() => void poll(), 2000); return;
+      }
       try {
         await refresh();
         if (!cancelled) setStreamError("");
@@ -91,8 +96,8 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       if (!cancelled) timer = setTimeout(() => void poll(), 2000);
     }
     void poll();
-    return () => { cancelled = true; ++refreshSequence.current; clearTimeout(timer); };
-  }, [classroom.id, active, busy]);
+    return () => { cancelled = true; refreshState.current.invalidate(); clearTimeout(timer); };
+  }, [classroom.id, active]);
 
   useEffect(() => {
     if (!running || busy || index >= plan.length) return;
