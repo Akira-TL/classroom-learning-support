@@ -56,6 +56,7 @@ class Session:
     events: list[SpeechEvent] = field(default_factory=list)
     ended: bool = False
     capture_started_unix_ms: int | None = None  # 采集端给出的第 0 个样本的墙钟时间；不给则取首帧到达时间（近似）
+    channels: int = 2  # 实际采集通道数；单声道的内部复制不构成麦克风阵列
 
     def __post_init__(self) -> None:
         self.archive_dir.mkdir(parents=True, exist_ok=True)
@@ -108,6 +109,7 @@ class Session:
 
     def timebase(self) -> dict:
         return {"unit": "ms", "origin": "session_sample_0", "sample_rate": self.cfg.sample_rate,
+                "input_channels": self.channels, "stored_channels": 2,
                 "capture_started_unix_ms": self.capture_started_unix_ms, "wall_clock_source": self._clock_source,
                 "note": "会话毫秒 = 样本序号 / 采样率；墙钟只用于换算，可能有采集端时钟漂移"}
 
@@ -129,6 +131,11 @@ class Session:
     # ---------- 输入 ----------
     def push_pcm(self, pcm: bytes, channels: int = 2) -> None:
         """接收 s16le 交错 PCM。单声道输入会复制成两路，并在位置事件中标为无法判断。"""
+        if channels not in (1, 2):
+            raise ValueError("只接受单声道或双声道输入")
+        if self._samples and channels != self.channels:
+            raise ValueError("会话内不能改变实际采集通道数")
+        self.channels = channels
         x = np.frombuffer(pcm, dtype="<i2").astype(np.float32) / 32768.0
         x = x.reshape(-1, channels).T
         if channels == 1:
@@ -194,6 +201,11 @@ class Session:
 
     def process_segment(self, x: np.ndarray, start_sample: int) -> list[SpeechEvent]:
         start_ms, end_ms = self._ms(start_sample), self._ms(start_sample + x.shape[1])
+        if self.channels == 1:
+            # 复制只满足内部缓冲区形状。没有阵列时保留原音并转写，不运行空间分流或身份跟踪。
+            return self._emit_segment(
+                self._next_segment_id(), x[0], None, start_ms, end_ms, [], "raw",
+            )
         spec = to_stft(x, self.cfg)
         loc = self.stages.localize(spec, self.cfg, noise_cross=self._noise_cross, max_sources=2)
         azimuths = list(loc.azimuths)
@@ -301,11 +313,65 @@ class Session:
 
     def _emit_segment(self, seg_id, audio, azimuth, start_ms, end_ms, overlap_with, kind, doa_conf=None, enrolled=None) -> list[SpeechEvent]:
         doa_conf = None if doa_conf is None or np.isnan(doa_conf) else float(doa_conf)
+        if azimuth is None:
+            position = self._mono_position(seg_id, start_ms, end_ms)
+        else:
+            position = self._spatial_position(
+                seg_id, audio, azimuth, start_ms, end_ms, overlap_with, doa_conf, enrolled,
+            )
+        events = [position]
+        refs = [AudioRef(id=f"aud_{self.session_id}_raw", kind="raw")]
+        if kind != "raw":
+            refs.append(AudioRef(
+                id=f"aud_{self.session_id}_{seg_id}_{kind}", kind=kind, offset_ms=start_ms,
+                note="处理音轨，原音频不被覆盖",
+            ))
+            sf.write(self.archive_dir / f"{seg_id}_{kind}.wav", audio, self.cfg.sample_rate)
+        overlap = Overlap(present=bool(overlap_with), with_segments=overlap_with)
+        ctx = dict(self.context or {}, start_ms=start_ms, end_ms=end_ms, overlap=bool(overlap_with))
+        result = self.guard.transcribe(audio, self.cfg.sample_rate, context=ctx) if self.asr else None
+        common = dict(
+            event_type=EventType.TRANSCRIPT_FINAL, segment_id=seg_id, revision=1,
+            start_ms=start_ms, end_ms=end_ms, source_ref=position.source_ref, audio_ref=refs, overlap=overlap,
+        )
+        if result is None or not result.text:
+            reason = "asr_unavailable" if self.asr is None else "no_speech_recognized"
+            events.append(self._emit(
+                **common, reliability_state=Reliability.FAILED if self.asr is None else Reliability.UNDETERMINED,
+                status=reason,
+            ))
+        else:
+            state = most_conservative(Reliability.NEEDS_REVIEW if overlap_with else None, result.reliability)
+            diag = {"engine": result.engine, "audio_kind": kind}
+            if hasattr(result, "diagnostics"):
+                diag.update(result.diagnostics())
+            events.append(self._emit(**common, text=result.text, reliability_state=state, diagnostics=diag))
+        return events
+
+    def _mono_position(self, seg_id: str, start_ms: int, end_ms: int) -> SpeechEvent:
+        source = SourceRecord(
+            source_id=f"src_unknown_{seg_id}", kind="anon_speaker", value="unknown", unit="label",
+            reference="session", valid_from_ms=start_ms, valid_to_ms=end_ms,
+            reliability_state=Reliability.UNDETERMINED,
+        )
+        return self._emit(
+            event_type=EventType.SOURCE_POSITION, segment_id=seg_id, start_ms=start_ms, end_ms=end_ms,
+            source_ref=[source.source_id], sources=[source], reliability_state=Reliability.UNDETERMINED,
+            status="mono_position_unavailable", diagnostics={"input_channels": 1},
+        )
+
+    def _spatial_position(
+        self, seg_id: str, audio: np.ndarray, azimuth: float, start_ms: int, end_ms: int,
+        overlap_with: list[str], doa_conf: float | None, enrolled: str | None,
+    ) -> SpeechEvent:
         kw = {"overlap": bool(overlap_with)} if "overlap" in inspect.signature(self.speakers.assign).parameters else {}
         track = self.speakers.assign(float(azimuth), start_ms, end_ms, audio, self.cfg.sample_rate,
                                      doa_conf if doa_conf is not None else 0.5, **kw)
         label, rebind = track.label, track.rebind_hint
-        az_state = Reliability.NEEDS_REVIEW if overlap_with or (doa_conf is not None and doa_conf < 0.3) else Reliability.USABLE
+        az_state = (
+            Reliability.NEEDS_REVIEW
+            if overlap_with or (doa_conf is not None and doa_conf < 0.3) else Reliability.USABLE
+        )
         az_rec = SourceRecord(
             source_id=f"src_az_{seg_id}", kind="azimuth", value=round(float(azimuth), 1), unit="deg",
             reference="mic_pair_broadside", valid_from_ms=start_ms, valid_to_ms=end_ms,
@@ -314,34 +380,18 @@ class Session:
         spk_rec = SourceRecord(
             source_id=f"src_{label}", kind="anon_speaker", value=label, unit="label", reference="session",
             valid_from_ms=start_ms, valid_to_ms=end_ms,
-            reliability_state=most_conservative(Reliability.NEEDS_REVIEW if track.reliability == "usable" else track.reliability),
+            reliability_state=most_conservative(
+                Reliability.NEEDS_REVIEW if track.reliability == "usable" else track.reliability,
+            ),
             rebind_hint=rebind,
         )
         pos_diag = {"doa_confidence": doa_conf, **({"tracking": track.diagnostics} if track.diagnostics else {})}
         if enrolled is not None:
             pos_diag["enrolled_match"] = enrolled  # 声纹注册匹配只是线索，身份由应用与教师确认
-        events = [self._emit(event_type=EventType.SOURCE_POSITION, segment_id=seg_id, start_ms=start_ms, end_ms=end_ms,
-                             source_ref=[az_rec.source_id, spk_rec.source_id], sources=[az_rec, spk_rec], diagnostics=pos_diag)]
-        refs = [AudioRef(id=f"aud_{self.session_id}_raw", kind="raw")]
-        if kind != "raw":
-            refs.append(AudioRef(id=f"aud_{self.session_id}_{seg_id}_{kind}", kind=kind, offset_ms=start_ms, note="处理音轨，原音频不被覆盖"))
-            sf.write(self.archive_dir / f"{seg_id}_{kind}.wav", audio, self.cfg.sample_rate)
-        overlap = Overlap(present=bool(overlap_with), with_segments=overlap_with)
-        ctx = dict(self.context or {}, start_ms=start_ms, end_ms=end_ms, overlap=bool(overlap_with))
-        result = self.guard.transcribe(audio, self.cfg.sample_rate, context=ctx) if self.asr else None
-        common = dict(event_type=EventType.TRANSCRIPT_FINAL, segment_id=seg_id, revision=1, start_ms=start_ms, end_ms=end_ms,
-                      source_ref=[az_rec.source_id, spk_rec.source_id], audio_ref=refs, overlap=overlap)
-        if result is None or not result.text:
-            reason = "asr_unavailable" if self.asr is None else "no_speech_recognized"
-            events.append(self._emit(**common, reliability_state=Reliability.FAILED if self.asr is None else Reliability.UNDETERMINED,
-                                     status=reason))
-        else:
-            state = most_conservative(Reliability.NEEDS_REVIEW if overlap_with else None, result.reliability)
-            diag = {"engine": result.engine, "audio_kind": kind}
-            if hasattr(result, "diagnostics"):
-                diag.update(result.diagnostics())
-            events.append(self._emit(**common, text=result.text, reliability_state=state, diagnostics=diag))
-        return events
+        return self._emit(
+            event_type=EventType.SOURCE_POSITION, segment_id=seg_id, start_ms=start_ms, end_ms=end_ms,
+            source_ref=[az_rec.source_id, spk_rec.source_id], sources=[az_rec, spk_rec], diagnostics=pos_diag,
+        )
 
     # ---------- 状态 ----------
     def report_gap(self, start_ms: int, end_ms: int, reason: str) -> SpeechEvent:
