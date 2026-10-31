@@ -86,7 +86,9 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
       <button type="button" onClick={() => setRefresh((value) => value + 1)}>重试读取与解释</button></section>}
     {explanation && explanation.perspective === perspective && <AutomaticReport result={explanation} />}
     {hasData && current && current.summaries.length > 0 && <div className={styles.summary}>
-      {current.summaries.map((summary) => <article key={summary.label}><h3>{tagNames[summary.label]}</h3>
+      {current.summaries.filter((summary) => !demonstration
+        || summary.baseline_count !== 0 || summary.current_count !== 0)
+        .map((summary) => <article key={summary.label}><h3>{tagNames[summary.label]}</h3>
         <p>上周 <strong>{countLabel(summary.baseline_count)}</strong></p>
         <small>{minuteRate(summary.baseline_per_hour)}</small>
         <p>本周 <strong>{countLabel(summary.current_count)}</strong></p>
