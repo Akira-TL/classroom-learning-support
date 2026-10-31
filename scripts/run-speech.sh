@@ -16,6 +16,6 @@ if ! command -v uv >/dev/null 2>&1; then
   export PATH="$(cygpath -u "$USERPROFILE/.local/bin"):$PATH"
 fi
 cd "$ROOT/services/speech"
-uv run --frozen --extra asr --env-file "$ROOT/.env" uvicorn classroom_speech.server:app \
+uv run --frozen --no-editable --extra asr --env-file "$ROOT/.env" uvicorn classroom_speech.server:app \
   --host 127.0.0.1 --port "${SPEECH_PORT:-8765}" --app-dir "$ROOT/services/speech/src" \
   2>&1 | tee -a "$ROOT/logs/speech/server.log"
