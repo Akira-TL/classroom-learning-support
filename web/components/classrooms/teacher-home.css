@@ -1,0 +1,35 @@
+.classroom-catalog { max-width: 1320px; margin: 0 auto; }
+.catalog-heading, .workspace-heading { display: flex; justify-content: space-between; align-items: center;
+  gap: 24px; padding: 14px 4px 24px; }
+.catalog-heading h1, .workspace-heading h1 { margin: 4px 0 8px; font-size: 25px; }
+.catalog-heading p { margin: 0; color: var(--color-muted, #6c778c); }
+.eyebrow { font-size: 12px; letter-spacing: .06em; color: #64748b; }
+.classroom-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.classroom-cards .surface-card { padding: 24px; }
+.classroom-cards h2 { font-size: 21px; margin: 22px 0 12px; }
+.catalog-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.catalog-card-top time { font-size: 13px; color: #6c778c; }
+.workspace-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
+.classroom-editor { margin: 24px 0; padding: 28px; }
+.classroom-tools { margin: 22px 0; padding: 18px 22px; }
+.classroom-tools > summary { font-weight: 600; }
+.classroom-tools[open] > summary { margin-bottom: 20px; }
+.classroom-maintenance { max-width: 1320px; margin: 24px auto; }
+.classroom-catalog [hidden], [aria-label="教师工作区"][hidden], .classroom-maintenance[hidden] { display: none; }
+.app-status:empty { display: none; }
+.login-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  gap: 70px; max-width: 1100px; margin: 8vh auto; align-items: center; padding: 24px; }
+.login-intro h1 { font-size: clamp(28px, 3vw, 42px); line-height: 1.55; margin: 20px 0; }
+.login-intro p { color: #64748b; max-width: 450px; }
+.login-card { padding: 32px; }
+.login-card fieldset { margin: 0; padding: 0; border: 0; }
+.login-card legend { color: #64748b; font-size: 13px; }
+.login-card button[type="submit"] { width: 100%; margin: 20px 0; }
+.login-card details { font-size: 12px; color: #64748b; }
+@media(max-width: 760px) {
+  .login-layout { grid-template-columns: minmax(0, 1fr); gap: 24px; padding: 0; margin: 24px auto; }
+  .catalog-heading, .workspace-heading { align-items: flex-start; flex-direction: column; gap: 12px; }
+  .workspace-heading h1 { font-size: 22px; }
+  .classroom-cards { grid-template-columns: minmax(0, 1fr); }
+  .classroom-editor, .classroom-tools { padding: 16px; }
+}
