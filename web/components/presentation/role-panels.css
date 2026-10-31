@@ -124,6 +124,15 @@ span.basis-label { margin-left: 10px; }
 .support-panel .incomplete-field textarea { border-color: #e7c898; background: #fffcf6; }
 .support-panel blockquote { margin: 16px 0; padding: 18px 20px; background: #eef6ff;
   border-left: 3px solid var(--panel-blue); border-radius: 0 8px 8px 0; }
+.publish-preview { border: 1px solid #bad3f6; border-radius: 12px; padding: 20px; background: #f5f9ff; margin: 22px 0; }
+.preview-exercise + .preview-exercise { border-top: 1px solid var(--panel-border); padding-top: 8px; }
+.source-location { padding: 16px; background: #f0f6ff; border-radius: 10px; margin: 16px 0; }
+.support-panel a { color: #155fc7; text-underline-offset: 3px; }
+.support-panel .privacy-note { color: var(--panel-muted); font-size: .8rem; }
+.parent-question-queue { border-top: 1px solid var(--panel-border); margin-top: 28px; padding-top: 8px; }
+.support-panel .support-panel { box-shadow: none; margin: 18px 0; padding: 20px; background: #fff; }
+.support-panel .download-link { display: inline-block; padding: 9px 14px; border: 1px solid #cbd9ef;
+  border-radius: 8px; margin: 6px 8px 6px 0; font-size: .88rem; text-decoration: none; }
 @media (max-width: 640px) {
   .role-panel, .support-panel { border-radius: 12px; padding: 16px; margin: 12px 0; }
   .panel-heading { gap: 10px; }

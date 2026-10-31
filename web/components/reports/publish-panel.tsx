@@ -5,6 +5,7 @@ import type { EvidenceRecord } from "../../lib/evidence";
 import { reportsApi, reportStatus } from "../../lib/reports";
 import type { ParentReport, ReportPreview } from "../../lib/reports";
 import { QuestionQueue } from "./question-queue";
+import "../presentation/role-panels.css";
 
 export function PublishPanel({ classroomId, evidence }: { classroomId: string; evidence: EvidenceRecord }) {
   const [summary, setSummary] = useState("");
@@ -67,33 +68,42 @@ export function PublishPanel({ classroomId, evidence }: { classroomId: string; e
     finally { setBusy(false); }
   }
 
-  return <section aria-label="家长摘要发布">
-    <h4>向家长发布学习摘要</h4>
-    <p>此处由教师人工编辑；只发送筛选后的文字和家庭活动，不包含原音频或教师内部证据说明。</p>
-    {evidence.status !== "confirmed" && <p>须先确认当前学习证据，才能预览和发布。</p>}
+  return <section className="support-panel parent-publish" aria-label="家长摘要发布">
+    <p className="eyebrow">发布与接收预览</p><h4>家长学习摘要</h4>
+    <p className="panel-intro">教师筛选后的文字与家庭活动，不包含原音频或内部证据说明。</p>
+    {evidence.status !== "confirmed" && <div className="empty-state warning-state"><h4>依据已变化 · 等待重核</h4>
+      <p>须先确认当前学习证据，才能预览并发布新版。</p></div>}
     {student !== "student-01" && <p>当前演示仅为 student-01 配置家长绑定；该学生尚无可接收家长。</p>}
     {error && <p role="alert">{error}</p>}
     <p role="status">{busy ? "正在核对并提交…" : notice}</p>
     <fieldset disabled={busy || !eligible}>
-      <legend>学生 {student}，证据版本 {evidence.revision}</legend>
+      <legend>接收学生的绑定家长 · {student} · 依据证据版本 {evidence.revision}</legend>
       <label>家长学习摘要<textarea value={summary} maxLength={4000}
         onChange={(event) => edit(event.target.value, "summary")} /></label>
       <label>家庭活动<textarea value={activity} maxLength={4000}
         onChange={(event) => edit(event.target.value, "activity")} /></label>
       <button disabled={!summary.trim() || !activity.trim()} onClick={() => void makePreview()}>预览接收对象与内容</button>
-      {preview && <div>
-        <p>接收家长：{preview.parent_id}，学生：{preview.content.student_id}</p>
-        <p>{preview.content.summary}</p><p>{preview.content.home_activity}</p><p>{preview.notice}</p>
-        <button onClick={() => void publish()}>确认内容并发布（失败可重试同一请求）</button>
+      {preview && <div className="publish-preview">
+        <p className="eyebrow">家长实际接收预览 · 尚未发布</p>
+        <p>接收家长：{preview.parent_id} · 绑定学生：{preview.content.student_id}</p>
+        <h4>学习摘要</h4><p>{preview.content.summary}</p>
+        <h4>家庭活动</h4><p>{preview.content.home_activity}</p><p>{preview.notice}</p>
+        <button className="primary-button" onClick={() => void publish()}>确认内容并发布给绑定家长</button>
       </div>}
     </fieldset>
     <button disabled={busy} onClick={() => void refresh()}>刷新发布状态</button>
-    {reports.filter((report) => report.evidence_id === evidence.id).map((report) => <article key={report.id}>
-      <p>{reportStatus[report.status]} · 报告版本 {report.revision} · 依据证据版本 {report.evidence_revision}</p>
-      <p><a href={`/?parent_report=${encodeURIComponent(report.id)}`}>报告入口（需绑定家长登录）</a> · {report.id}</p>
-      {report.status === "published" && <button disabled={busy} onClick={() => void revoke(report)}>撤回此报告</button>}
+    {reports.filter((report) => report.evidence_id === evidence.id).map((report) =>
+      <article className="history-card" key={report.id}>
+      <span className={`status-badge status-${report.status}`}>{reportStatus[report.status]}</span>
+      <p className="basis-label">报告版本 {report.revision} · 依据证据版本 {report.evidence_revision}</p>
+      {report.status === "stale" && <p>旧报告正文已停止提供，原提问与回复保留。</p>}
+      <details className="audit-details"><summary>报告入口与来源记录</summary>
+        <p><a href={`/?parent_report=${encodeURIComponent(report.id)}`}>报告入口（需绑定家长登录）</a></p>
+        <p>报告编号：{report.id}</p></details>
+      {report.status === "published" && <button className="danger-text" disabled={busy}
+        onClick={() => void revoke(report)}>撤回此报告</button>}
     </article>)}
-    <p>撤回后站内旧报告及受控入口停止提供；已下载的离线副本不能远程收回。</p>
+    <p className="privacy-note">撤回后站内旧报告及受控入口停止提供；已下载的离线副本不能远程收回。</p>
     <QuestionQueue classroomId={classroomId}
       reportIds={reports.filter((report) => report.evidence_id === evidence.id).map((report) => report.id)} />
   </section>;

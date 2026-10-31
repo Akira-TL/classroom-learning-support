@@ -8,6 +8,7 @@ import { ExportRequests, mergeExportList, preferExport } from "../../lib/exports
 import type { RequestToken } from "../../lib/exports/coordination";
 import { reportsApi } from "../../lib/reports";
 import type { ParentReport } from "../../lib/reports";
+import "../presentation/role-panels.css";
 
 export function ExportPanel({ classroomId, plan }: { classroomId: string; plan: PlanRecord }) {
   const [reports, setReports] = useState<ParentReport[]>([]);
@@ -99,9 +100,9 @@ export function ExportPanel({ classroomId, plan }: { classroomId: string; plan: 
     finally { finish(token); }
   }
 
-  return <section aria-label="教师报告导出">
-    <h4>导出教师教学支持报告</h4>
-    <p>仅根据当前已确认教学安排创建静态 HTML 报告，不调用模型。来源变化后须重新核实。</p>
+  return <section className="support-panel export-panel" aria-label="教师报告导出">
+    <p className="eyebrow">教学资料归档</p><h4>教师教学支持报告</h4>
+    <p className="panel-intro">根据已确认教学安排创建 HTML 报告，来源变化后须重新核实。</p>
     {!trusted && <p role="status">当前来源或报告状态待核实，暂不提供有效报告操作。</p>}
     {plan.status !== "confirmed" && <p>当前教学安排尚未确认或已过期，不能创建正式报告。</p>}
     {error && <p role="alert">{error} 原选择和创建请求已保留，请刷新核对后重试。</p>}
@@ -109,13 +110,14 @@ export function ExportPanel({ classroomId, plan }: { classroomId: string; plan: 
     <label>可选附加同学生的家长报告<select value={parentId} disabled={busy || !trusted}
       onChange={(event) => { setParentId(event.target.value); setNotice(""); }}>
       <option value="">不附加家长报告</option>
-      {!selectedAvailable && <option value={parentId}>原选择待核实或已失效：{parentId}</option>}
+      {!selectedAvailable && <option value={parentId}>原选择待核实或已失效</option>}
       {candidates.map((report) => <option key={report.id} value={report.id}>
-        {report.student_id} · 家长报告 {report.id} · 版本 {report.revision}</option>)}
+        {report.student_id} · {new Date(report.published_at).toLocaleString("zh-CN")} · 版本 {report.revision}</option>)}
     </select></label>
-    {attempt && <p>保留请求：课堂 {attempt.classroomId}，计划 {attempt.body.plan_id}，
-      版本 {attempt.body.expected_plan_revision}。重试使用原参数；使用新选择请明确准备新请求。</p>}
-    <button type="button" disabled={busy || !trusted || plan.status !== "confirmed"
+    {attempt && <details className="audit-details"><summary>原创建请求已保留 · 采用原参数重试</summary>
+      <p>课堂 {attempt.classroomId} · 计划 {attempt.body.plan_id} · 版本 {attempt.body.expected_plan_revision}。</p>
+      <p>重试使用原参数；使用新选择请明确准备新请求。</p></details>}
+    <button className="primary-button" type="button" disabled={busy || !trusted || plan.status !== "confirmed"
       || Boolean(attempt && attempt.classroomId !== classroomId)} onClick={() => void create()}>
       {attempt ? "重试同一次报告创建请求" : "创建教师报告"}</button>
     {attempt && <button type="button" disabled={busy} onClick={() => {
@@ -123,16 +125,20 @@ export function ExportPanel({ classroomId, plan }: { classroomId: string; plan: 
     }}>准备创建另一份报告</button>}
     <button type="button" disabled={busy} onClick={() => void load()}>刷新报告与有效状态</button>
     {trusted && exports.length === 0 && <p>本课堂尚无教师导出报告。</p>}
-    {exports.map((metadata) => <article key={metadata.id}>
-      <p>报告 {metadata.id}：{trusted ? exportStatus[metadata.status] : "状态待重新核实"} · 版本 {metadata.revision}
-        · {new Date(metadata.created_at).toLocaleString("zh-CN")}</p>
-      <a href={statusUrl(metadata.id)} target="_blank" rel="noopener noreferrer">查询状态（仅元数据）</a>
+    {exports.map((metadata) => <article className="history-card" key={metadata.id}>
+      <header className="panel-heading"><strong>教师教学支持报告</strong>
+        <span className={`status-badge status-${trusted ? metadata.status : "pending"}`}>
+          {trusted ? exportStatus[metadata.status] : "状态待重新核实"}</span></header>
+      <p className="basis-label">版本 {metadata.revision} · {new Date(metadata.created_at).toLocaleString("zh-CN")}</p>
+      {trusted && metadata.status === "stale" && <p>来源已变化，旧报告下载入口已关闭。请重核后创建新版。</p>}
       {trusted && !busy && metadata.status === "active" && <>
         <button type="button" onClick={() => void preview(metadata)}>预览静态报告</button>
-        <a href={downloadUrl(metadata.id)}>下载教师 HTML 报告</a>
-        <button type="button" onClick={() => void revoke(metadata)}>撤回此报告</button>
+        <a className="download-link" href={downloadUrl(metadata.id)}>下载 HTML 报告</a>
+        <button className="danger-text" type="button" onClick={() => void revoke(metadata)}>撤回此报告</button>
       </>}
+      <details className="audit-details"><summary>报告编号与受控状态入口</summary><p>报告编号：{metadata.id}</p>
+        <a href={statusUrl(metadata.id)} target="_blank" rel="noopener noreferrer">查询状态（仅元数据）</a></details>
     </article>)}
-    <p>受控入口会检查当前权限与依据；已下载的离线副本不能远程收回，请核对状态。</p>
+    <p className="privacy-note">受控入口会检查当前权限与依据；已下载的离线副本不能远程收回，请核对状态。</p>
   </section>;
 }
