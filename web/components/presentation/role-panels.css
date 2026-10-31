@@ -77,19 +77,13 @@
 .empty-state { background: #f5f8fc; border: 1px dashed #d4dfed; border-radius: 12px;
   padding: 28px 20px; text-align: center; color: var(--panel-muted); margin: 20px 0; }
 .warning-state { background: #fffbf2; color: #8e631d; }
-.home-activity, .history-card { padding: 18px;
-  border: 1px solid var(--panel-border);
-  border-radius: 12px;
-  margin: 16px 0;
-  }
+.home-activity, .history-card { padding: 18px; border: 1px solid var(--panel-border);
+  border-radius: 12px; margin: 16px 0; }
 .home-activity { background: #f7faff; }
 .home-activity h3 { margin-top: 0; }
 .teacher-response { background: #eff6ff; padding: 14px; border-radius: 8px; color: #345880; }
-.privacy-note { font-size: .8rem;
-  color: var(--panel-muted);
-  border-top: 1px solid var(--panel-border);
-  padding-top: 18px;
-  }
+.privacy-note { font-size: .8rem; color: var(--panel-muted);
+  border-top: 1px solid var(--panel-border); padding-top: 18px; }
 .summary-metrics { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; margin: 24px 0; }
 .summary-metrics > div { padding: 18px; background: #f5f8fd; border-radius: 10px; }
 .summary-metrics span { color: var(--panel-muted); font-size: .88rem; }
