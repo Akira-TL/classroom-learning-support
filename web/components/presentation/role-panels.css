@@ -131,6 +131,10 @@ span.basis-label { margin-left: 10px; }
 .support-panel .privacy-note { color: var(--panel-muted); font-size: .8rem; }
 .parent-question-queue { border-top: 1px solid var(--panel-border); margin-top: 28px; padding-top: 8px; }
 .support-panel .support-panel { box-shadow: none; margin: 18px 0; padding: 20px; background: #fff; }
+.impact-list { list-style: none; padding: 0; border: 1px solid var(--panel-border); border-radius: 10px; }
+.impact-list li { display: grid; grid-template-columns: minmax(0, 1fr) auto auto; gap: 16px;
+  padding: 14px 16px; align-items: center; }
+.impact-list li + li { border-top: 1px solid var(--panel-border); }
 .support-panel .download-link { display: inline-block; padding: 9px 14px; border: 1px solid #cbd9ef;
   border-radius: 8px; margin: 6px 8px 6px 0; font-size: .88rem; text-decoration: none; }
 @media (max-width: 640px) {
