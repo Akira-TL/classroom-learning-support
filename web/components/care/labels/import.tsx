@@ -43,7 +43,9 @@ export function LabelImport({ classroomId, student, onSaved }: {
         session_id: "替换为音频会话标识", source_name: "格式示例", source_version: "1",
         source_description: "请填写标签由谁、用什么方式产生", data_origin: "demonstration",
         capture_conditions: "请填写设备和环境", captured_duration_ms: null,
-        identity_confirmed: false, confirmed: false, tags: [{ tag_id: "tag-01", label: "cough", original_label: "咳嗽",
+        identity_confirmed: false, confirmed: false,
+        transcripts: [{ start_ms: 1000, end_ms: 2000, text: "替换为对应时间的转写原文" }],
+        tags: [{ tag_id: "tag-01", label: "cough", original_label: "咳嗽",
           category: "audible_event", start_ms: 1000, end_ms: 2000, count: 1, note: "格式示例，替换为实际标注" }] }, null, 2)}</pre>
     </details>{message && <p role="status">{message}</p>}
   </details>;

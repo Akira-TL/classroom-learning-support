@@ -4,10 +4,12 @@ import { useEffect, useState } from "react";
 import type { Classroom } from "../../../lib/types";
 import { labelsApi } from "../../../lib/care/labels/api";
 import { sameComparisonScope, weekPeriods } from "../../../lib/care/periods";
-import { tagNames, type TagComparison } from "../../../lib/care/labels/types";
+import { perspectives, tagNames, type AutoExplanation, type Perspective,
+  type TagComparison } from "../../../lib/care/labels/types";
 import { countLabel, minuteRate } from "../../../lib/care/labels/presentation";
 import { LabelImport } from "./import";
 import { LabelPeriod } from "./period";
+import { AutomaticReport } from "./explanation";
 import common from "../care.module.css";
 import styles from "./labels.module.css";
 
@@ -21,8 +23,25 @@ export function LabelDashboard({ classroom, student, active }: {
   const [comparison, setComparison] = useState<TagComparison | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
+  const [perspective, setPerspective] = useState<Perspective>("teacher");
+  const [explanation, setExplanation] = useState<AutoExplanation | null>(null);
+  const [reportError, setReportError] = useState("");
+  const [generating, setGenerating] = useState(false);
   const request = { student_id: student, ...periods };
   const current = comparison && sameComparisonScope(comparison.periods, request) ? comparison : null;
+  const sourceKey = [...current?.baseline ?? [], ...current?.current ?? []]
+    .map((batch) => `${batch.id}/${batch.revision}`).join(";");
+  useEffect(() => {
+    setExplanation(null); setReportError("");
+    if (!active || !sourceKey) { setGenerating(false); return; }
+    let cancelled = false; setGenerating(true);
+    labelsApi.explain(classroom.id, { student_id: student, ...periods }, perspective).then((result) => {
+      if (!cancelled) setExplanation(result);
+    }).catch((failure: unknown) => {
+      if (!cancelled) setReportError(failure instanceof Error ? failure.message : "自动解释暂时不可用。");
+    }).finally(() => { if (!cancelled) setGenerating(false); });
+    return () => { cancelled = true; };
+  }, [active, classroom.id, student, periods, perspective, sourceKey, refresh]);
   useEffect(() => {
     if (!active) return;
     let cancelled = false; setComparison(null); setError("");
@@ -43,6 +62,12 @@ export function LabelDashboard({ classroom, student, active }: {
       </label>)}
     </div></details>{error && <p role="alert">{error}</p>}</section>
     <LabelImport classroomId={classroom.id} student={student} onSaved={() => setRefresh((value) => value + 1)} />
+    <section className={common.card}><h2>报告视角</h2>
+      <div className={styles.perspectives} role="group" aria-label="切换报告预览视角">
+        {perspectives.map(([value, label]) => <button type="button" key={value} aria-pressed={perspective === value}
+          onClick={() => setPerspective(value)}>{label}</button>)}
+      </div><p className={common.muted}>教师预览不同对象的解释，实际学生与家长账号只访问本人或绑定孩子的报告。</p>
+    </section>
     {current && current.summaries.length > 0 ? <div className={styles.summary}>
       {current.summaries.map((summary) => <article key={summary.label}><h3>{tagNames[summary.label]}</h3>
         <p>上周 <strong>{countLabel(summary.baseline_count)}</strong></p>
@@ -57,9 +82,16 @@ export function LabelDashboard({ classroom, student, active }: {
     </div> : <section className={common.card}><h2>等待导入标签</h2>
       <p>提供上周与本周的标签、时间戳和对应会话后，这里将显示次数与时间分布。尚无数据不表示零次。</p></section>}
     <div className={styles.periods}>
-      <LabelPeriod title="上周时间分布" batches={current?.baseline ?? []} active={active} allowAudio />
-      <LabelPeriod title="本周时间分布" batches={current?.current ?? []} active={active} allowAudio />
+      <LabelPeriod title="上周时间分布" batches={current?.baseline ?? []} active={active}
+        allowAudio={perspective !== "teaching_director"} />
+      <LabelPeriod title="本周时间分布" batches={current?.current ?? []} active={active}
+        allowAudio={perspective !== "teaching_director"} />
     </div>
     {current?.notes.map((note, index) => <p className={common.muted} key={index}>{note}</p>)}
+    {generating && <section className={common.card}><p role="status">正在根据当前标签自动生成解释…</p></section>}
+    {reportError && <section className={common.card}><p role="alert">{reportError}</p>
+      <button type="button" onClick={() => setRefresh((value) => value + 1)}>重试读取与解释</button></section>}
+    {explanation && explanation.perspective === perspective && <AutomaticReport result={explanation} />}
+    {!sourceKey && <p>导入所选学生的标签后自动形成解释，不需要人工确认发布。</p>}
   </div>;
 }

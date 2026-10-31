@@ -59,8 +59,12 @@ export function LabelPeriod({ title, batches, active, allowAudio }: {
             {timeLabel(tag.start_ms)}—{timeLabel(tag.end_ms)}</button>
           {tag.category === "external_state" && <p>外部状态标签，来源待核实；声音本身不能证明{tag.original_label}。</p>}
           {tag.note && <p>{tag.note}</p>}
-          {selected === `${batch.id}/${tag.tag_id}` && (allowAudio
-            ? <TagAudio batch={batch} tag={tag} active={active} /> : <p>汇总视角不展示个人音频。</p>)}
+          {selected === `${batch.id}/${tag.tag_id}` && <>
+            {allowAudio && batch.transcripts.filter((line) => line.start_ms < tag.end_ms
+              && line.end_ms > tag.start_ms).map((line, index) => <blockquote key={index}>
+                提供的转写：{line.text}</blockquote>)}
+            {allowAudio ? <TagAudio batch={batch} tag={tag} active={active} /> : <p>汇总视角不展示个人音频。</p>}
+          </>}
         </div>)}
       </article>;
     })}
