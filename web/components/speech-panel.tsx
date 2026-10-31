@@ -25,6 +25,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selection, setSelection] = useState("");
+  const [sourceFocusVersion, setSourceFocusVersion] = useState(0);
   const refreshState = useRef(new SpeechRefreshState());
   refreshState.current.busy = busy;
   const [streamError, setStreamError] = useState("");
@@ -43,10 +44,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
 
   function locate(item: Utterance) {
     select(item); onViewChange?.("review");
-    requestAnimationFrame(() => {
-      document.getElementById(`utterance-${item.session_id}-${item.segment_id}`)
-        ?.scrollIntoView({ block: "center", behavior: "smooth" });
-    });
+    setSourceFocusVersion((version) => version + 1);
   }
 
   useEffect(() => {
@@ -62,7 +60,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       try { anchor = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
       if (timeline.some((entry) => `utterance-${entry.session_id}-${entry.segment_id}` === anchor)) {
         onViewChange?.("review");
-        requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView({ block: "center" }));
+        setSourceFocusVersion((version) => version + 1);
       }
     }
     followSource(); window.addEventListener("hashchange", navigateSource);
@@ -125,7 +123,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
   }
 
   const title = { review: "核验工作台", teaching: "教学支持", publishing: "发布与反馈" }[view];
-  return <section className={styles.root} aria-label="语音结果与教师核验">
+  return <section className={styles.root} data-view={view} aria-label="语音结果与教师核验">
     <header className={styles.toolbar}><h2 className={styles.srOnly}>{title}</h2>
       <p role="status" aria-live="polite">{busy ? "正在发送或读取…" : notice || "原话可追溯 · 教师核验后使用"}</p>
       <button disabled={busy} onClick={() => void manualRefresh()}>刷新来源</button>
@@ -145,7 +143,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       {current && <span className={styles.sourceBadge}>{sourceNames[current.source_kind]}</span>}
     </div>
     <ClassroomAnalysis classroom={classroom} items={timeline} current={current} selected={selected}
-      onSelect={select} onSaved={refresh} active={active} view={view}>
+      onSelect={select} onSaved={refresh} active={active} view={view} sourceFocusVersion={sourceFocusVersion}>
       <div className={styles.inspector}>
       {timeline.length === 0 && view !== "review" && <div className={styles.empty}>
         请先接收发言并完成核验，再进入教学支持或发布。
@@ -154,7 +152,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
         <div hidden={view !== "review"}>
           <UtteranceReview classroom={classroom} utterance={item} onSaved={refresh} showAudio={false} />
         </div>
-        <div className={view === "publishing" ? styles.publishingGrid : undefined}>
+        <div className={`${styles.workContent}${view === "publishing" ? ` ${styles.publishingGrid}` : ""}`}>
           <EvidencePanel classroom={classroom} utterance={item} view={view} onLocateSource={() => locate(item)} />
           <div hidden={view !== "publishing"} className={styles.card}>
             <div className={styles.notice}>事实修正后请重新核验、生成并发布新版。
@@ -171,6 +169,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
       </article>)}
       </div>
     </ClassroomAnalysis>
+    <details className={styles.diagnostics}><summary>事件与接入诊断</summary>
     <details className={styles.replay}><summary>模拟事件回放 · 开发诊断</summary>
       <p>这里只回放合成事件，不采集麦克风、不调用真实语音服务。原音频可另行授权归档。</p>
       <p>样例包含临时转写、定稿、重复事件、断流缺口、恢复、修订和结束；固定讨论平均分与四分之一。</p>
@@ -193,6 +192,7 @@ export function SpeechPanel({ classroom, view = "review", active = true, onViewC
           : item.event_type === "metadata" ? "语音处理元数据" : phaseNames[item.event_type]}；来源：{sourceNames[item.source_kind]}
         {item.gap_start_ms !== null && <>；缺失区间 {item.gap_start_ms}—{item.gap_end_ms} 毫秒</>}
       </li>)}</ul>
+    </details>
     </details>
   </section>;
 }

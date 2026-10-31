@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import type { Classroom } from "../../../lib/types";
 import type { Utterance } from "../../../lib/speech";
 import { AudioPanel } from "../../audio-panel";
@@ -15,12 +15,36 @@ import styles from "./panel.module.css";
 
 const tabs = [["overview", "课堂概览"], ["questions", "提问分析"], ["transcript", "课堂实录"]] as const;
 
-export function ClassroomAnalysis({ classroom, items, current, selected, onSelect, onSaved, active, view, children }: {
+export function ClassroomAnalysis({ classroom, items, current, selected, onSelect, onSaved, active, view,
+  sourceFocusVersion = 0, children }: {
   classroom: Classroom; items: Utterance[]; current?: Utterance; selected: string;
   onSelect: (item: Utterance) => void; onSaved: () => Promise<void>; active: boolean;
-  view: WorkspaceView; children: ReactNode;
+  view: WorkspaceView; sourceFocusVersion?: number; children: ReactNode;
 }) {
   const [tab, setTab] = useState<(typeof tabs)[number][0]>("questions");
+  const [mobilePane, setMobilePane] = useState<"audio" | "analysis">("analysis");
+  const [narrow, setNarrow] = useState(false);
+  const sourceId = current ? `utterance-${current.session_id}-${current.segment_id}` : "";
+  useEffect(() => {
+    const query = window.matchMedia("(max-width: 1000px)");
+    const update = () => setNarrow(query.matches);
+    update(); query.addEventListener("change", update);
+    return () => query.removeEventListener("change", update);
+  }, []);
+  useEffect(() => {
+    if (sourceFocusVersion > 0) { setTab("transcript"); setMobilePane("analysis"); }
+  }, [sourceFocusVersion]);
+  useEffect(() => {
+    if (view !== "review" || tab !== "transcript") return;
+    const frame = requestAnimationFrame(() => {
+      const panel = document.getElementById("analysis-transcript");
+      const source = document.getElementById(sourceId);
+      if (!panel || !source) return;
+      panel.scrollTo({ top: panel.scrollTop + source.getBoundingClientRect().top
+        - panel.getBoundingClientRect().top - (panel.clientHeight - source.clientHeight) / 2 });
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [view, tab, selected, sourceFocusVersion, sourceId]);
   const evidence = useQuestionEvidence(classroom.id, active && view === "review" && tab === "questions");
   const question = classroom.questions.find((item) => item.id === current?.question_id) ?? classroom.questions[0];
   const sessionItems = current ? items.filter((item) => item.session_id === current.session_id) : [];
@@ -36,7 +60,13 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
     { name: "重叠发言", values: sessionItems.filter((item) => item.overlap) },
     { name: "内容待核验", values: sessionItems.filter((item) => item.text_review !== "confirmed") },
   ];
-  return <div className={view === "review" ? styles.columns : styles.full}>
+  return <div className={view === "review" ? styles.columns : styles.full} data-mobile-pane={mobilePane}>
+    {view === "review" && <div className={styles.mobileTabs} role="group" aria-label="选择课堂面板">
+      <button type="button" aria-pressed={mobilePane === "audio"} onClick={() => setMobilePane("audio")}>
+        音频与标注</button>
+      <button type="button" aria-pressed={mobilePane === "analysis"} onClick={() => setMobilePane("analysis")}>
+        分析与核验</button>
+    </div>}
     <div hidden={view !== "review"} className={styles.left}>
       <section className={styles.media} aria-label="课堂音频与题目材料">
         <div className={styles.slide}>
@@ -49,7 +79,7 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
         <div className={styles.player}>
           {current ? <><p>{timeLabel(current.start_ms)}—{timeLabel(current.end_ms)} · 当前发言范围</p>
             <AudioPanel key={segmentKey(current)} classroomId={classroom.id} utterance={current}
-              onSaved={onSaved} active={active && view === "review"} />
+              onSaved={onSaved} active={active && view === "review" && (!narrow || mobilePane === "audio")} />
             <SourceDetails utterance={current} />
           </> : <p>接收音频结果后，可在此回听原始音频与处理音轨。</p>}
         </div>
@@ -61,7 +91,9 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
             <div className={styles.track}>{row.values.map((item) => <button type="button" key={segmentKey(item)}
               title={`${timeLabel(item.start_ms)}—${timeLabel(item.end_ms)} ${item.upstream_text || "无文字"}`}
               aria-label={`${row.name} ${timeLabel(item.start_ms)}至${timeLabel(item.end_ms)}`}
-              aria-pressed={selected === segmentKey(item)} onClick={() => { onSelect(item); setTab("transcript"); }}
+              aria-pressed={selected === segmentKey(item)} onClick={() => {
+                onSelect(item); setTab("transcript"); setMobilePane("analysis");
+              }}
               style={{ left: `${item.start_ms / end * 100}%`,
                 width: `${Math.max(0.7, (item.end_ms - item.start_ms) / end * 100)}%` }} />)}
             </div></div>)}
@@ -72,7 +104,7 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
       </section>
     </div>
     <div className={styles.right}>
-      <div hidden={view !== "review"}>
+      <div hidden={view !== "review"} className={styles.analysisPane}>
         <div className={styles.tabs} role="tablist" aria-label="课堂分析内容">
           {tabs.map(([value, label]) => <button key={value} type="button" role="tab" id={`analysis-tab-${value}`}
             tabIndex={tab === value ? 0 : -1} aria-selected={tab === value} aria-controls={`analysis-${value}`}
@@ -130,7 +162,7 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
           })}
         </section>
         <section role="tabpanel" id="analysis-transcript" aria-labelledby="analysis-tab-transcript"
-          hidden={tab !== "transcript"}>
+          hidden={tab !== "transcript"} className={styles.content}>
           <Timeline classroom={classroom} items={items} selected={selected} onSelect={onSelect} onSaved={onSaved}
             active={active && view === "review" && tab === "transcript"} showPlayback={false} />
         </section>

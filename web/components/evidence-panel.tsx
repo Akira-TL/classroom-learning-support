@@ -87,7 +87,7 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
       ? mergeResult(result, { ...result, evidence: updated }) : result));
   }
 
-  return <section aria-label="学习证据分析" className={view === "review" ? styles.card : undefined}>
+  return <section aria-label="学习证据分析" className={view === "review" ? styles.card : styles.evidencePanel}>
     <div hidden={view !== "review"}>
     {error && <p role="alert">{error} 未确认请求成功；可重试同一次请求，或明确重新生成。</p>}
     <p role="status" aria-live="polite">{busy ? "请求处理中，尚未确认生成成功…" : notice}</p>
@@ -130,7 +130,8 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
         </option>)}
       </select></label>
     </div></details>}
-    {results.map((result) => <article key={result.task.id} hidden={result.task.id !== selected}>
+    {results.map((result) => <article className={styles.evidenceTask} key={result.task.id}
+      hidden={result.task.id !== selected}>
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <details>
         <summary>已丢弃的过期返回，仅供核对，未采用为有效证据</summary>

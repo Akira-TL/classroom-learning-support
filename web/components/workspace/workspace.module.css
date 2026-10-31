@@ -1,4 +1,5 @@
-.root { color: #17233f; font-size: 16px; line-height: 1.65; }
+.root { display: flex; flex-direction: column; flex: 1; min-height: 0; min-width: 0;
+  overflow: hidden; color: #17233f; font-size: 16px; line-height: 1.65; }
 .root [hidden] { display: none !important; }
 .root h2, .root h3, .root h4, .root h5 { color: #16233d; line-height: 1.45; margin: 0 0 14px; }
 .root h2 { font-size: 20px; }
@@ -68,7 +69,7 @@
   color: #7b8aa1; font-size: 12px; font-weight: 400; }
 .rowSpeaker { display: flex; gap: 10px; align-items: center; font-weight: 600; font-size: 13px; }
 .transcript { color: #1b2d49; font-size: 15px; line-height: 1.8; }
-.inspector { min-width: 0; }
+.inspector { min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
 .inspector > article > div > section, .reviewCard { margin-bottom: 18px; }
 .empty { background: #f7faff; color: #6d7c92; border: 1px dashed #d5dfed; padding: 24px; border-radius: 8px; }
 .selection { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
@@ -124,6 +125,32 @@
 .notice { padding: 14px 18px; background: #eef5ff; color: #47627f; border-radius: 8px; margin: 14px 0; }
 .replay { margin-top: 24px; background: #fff; border: 1px solid #e1e8f1; border-radius: 10px; padding: 18px; }
 .replay > summary { font-size: 14px; font-weight: 600; }
+.root > .toolbar, .root > .selection { flex: 0 0 auto; }
+.root > p[role="alert"], .root > p[role="status"] { max-height: 20%; overflow: auto; flex-shrink: 1; }
+.diagnostics { flex: 0 1 auto; max-height: 30%; overflow: auto; overscroll-behavior: contain;
+  border-top: 1px solid #e1e8f1; padding: 7px 0 0; margin: 7px 0 0; font-size: 12px; }
+.diagnostics .replay { margin-top: 10px; }
+.root:not([data-view="review"]) .inspector { display: flex; flex-direction: column; flex: 1; overflow: hidden; }
+.root:not([data-view="review"]) .inspector > article { display: flex; flex-direction: column;
+  flex: 1; min-height: 0; overflow: hidden; }
+.root:not([data-view="review"]) .workContent { flex: 1; min-height: 0; overflow: hidden; }
+.root[data-view="teaching"] .workContent { display: flex; flex-direction: column; }
+.evidencePanel { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; overflow: hidden; }
+.evidencePanel > .workspaceHeading { flex: 0 0 auto; }
+.evidencePanel > details, .evidencePanel > p { max-height: 25%; flex: 0 1 auto; overflow: auto; }
+.root:not([data-view="review"]) .evidenceTask { display: flex; flex-direction: column;
+  flex: 1; min-height: 0; overflow: hidden; }
+.evidenceTask > .audit { flex: 0 1 auto; max-height: 25%; overflow: auto; }
+.evidenceGrid { flex: 1; min-height: 0; grid-template-rows: minmax(0,1fr); overflow: hidden; }
+.evidenceGrid > .card, .evidenceGrid > .supportCard { min-height: 0; overflow: auto;
+  overscroll-behavior: contain; scrollbar-gutter: stable; align-self: stretch; }
+.publishingGrid { grid-template-rows: minmax(0,1fr); align-items: stretch; }
+.publishingGrid > .card { min-height: 0; overflow: auto; overscroll-behavior: contain; scrollbar-gutter: stable; }
+.publishingContent { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.publishingContent > :first-child { flex: 0 1 auto; max-height: 35%; overflow: auto; }
+.publishingContent > .supportCard { flex: 1; min-height: 0; overflow: auto;
+  overscroll-behavior: contain; scrollbar-gutter: stable; }
+.root:not([data-view="review"]) .inspector > article > .audit { flex: 0 1 auto; max-height: 25%; overflow: auto; }
 .root [data-tone="danger"] { color: #c53b4b; border-color: #edc8cd; }
 @media (min-width: 1600px) { .timelineButton .transcript { font-size: 16px; } }
 @media (max-width: 1250px) {
@@ -132,9 +159,13 @@
   .evidenceGrid { grid-template-columns: minmax(200px,.65fr) minmax(330px,1fr); }
   .evidenceGrid > .planColumn { grid-column: 2; }
   .publishingGrid { grid-template-columns: minmax(0,1fr); }
+  .publishingGrid { grid-template-rows: minmax(0,1.5fr) minmax(0,1fr); }
+  .evidenceGrid { grid-template-rows: repeat(2,minmax(0,1fr)); }
 }
 @media (max-width: 800px) {
-  .reviewGrid, .evidenceGrid { display: block; }
+  .reviewGrid { display: block; }
+  .evidenceGrid { display: flex; flex-direction: column; overflow: auto; overscroll-behavior: contain; }
+  .evidenceGrid > .card, .evidenceGrid > .supportCard { flex: 0 0 auto; max-height: 85%; overflow: auto; }
   .reviewGrid > *, .evidenceGrid > * { margin-bottom: 16px; }
   .card, .supportCard { padding: 18px; }
   .selection { align-items: flex-start; flex-direction: column; }
