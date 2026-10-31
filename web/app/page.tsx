@@ -115,7 +115,7 @@ export default function Home() {
     {!user ? <div className="login-layout"><div className="login-intro">
       <span className="badge badge-blue">课堂学习支持演示</span><h1>走进课堂，<br />看见每一位学生。</h1>
       <p>从教室布局进入学生信息，查看声音标签、历史变化与不同角色的解释。</p>
-      <p className="muted">选择角色即可体验。提供的标注与演示样例将在各自来源中说明。</p>
+      <p className="muted">选择角色即可体验。</p>
     </div><LoginForm busy={busy} onLogin={login} /></div>
       : user.role === "student" ? <><StudentReader key={user.id} />
         <CareReader key={`care-${user.id}`} audience="student" studentId={user.student_id ?? ""} /></>

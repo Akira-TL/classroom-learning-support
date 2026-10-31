@@ -13,10 +13,10 @@ export function CarePanel({ classroom, active = true, initialPerspective = "teac
 }) {
   const [selected, setSelected] = useState("");
   return <section className={common.page} aria-label="课堂详情"><header className={common.heading}>
-    <h1>课堂详情</h1><p>{classroom.title} · 点击左侧学生，在右侧查看历史标签、时间分布与对应原声。</p>
+    <h1>课堂详情</h1><p>{classroom.title}</p>
   </header><div className={styles.windows}><section className={common.card} aria-label="演示教室座位布局">
-    <h2>教室布局</h2><p className={common.muted}>演示座位布局，可随数据调整；按名单排布，不代表真实座位或语音定位。</p>
-    <div className={styles.blackboard}>讲台方向（示意）</div>
+    <h2>教室布局</h2>
+    <div className={styles.blackboard}>讲台</div>
     <div className={styles.seats}>{seats(classroom.students).map((seat) => <button key={seat.position} type="button"
       disabled={!seat.student} aria-pressed={selected === seat.student}
       aria-label={`${seat.student ?? "空位"}，${seat.position}号座位`}
