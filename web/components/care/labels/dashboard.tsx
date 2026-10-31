@@ -81,6 +81,10 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
       </div>{!demonstration && <p className={common.muted}>
         教师预览不同对象的解释，实际学生与家长账号只访问本人或绑定孩子的报告。</p>}
     </section>
+    {generating && <section className={common.card}><p role="status">正在生成报告…</p></section>}
+    {reportError && <section className={common.card}><p role="alert">{reportError}</p>
+      <button type="button" onClick={() => setRefresh((value) => value + 1)}>重试读取与解释</button></section>}
+    {explanation && explanation.perspective === perspective && <AutomaticReport result={explanation} />}
     {hasData && current && current.summaries.length > 0 && <div className={styles.summary}>
       {current.summaries.map((summary) => <article key={summary.label}><h3>{tagNames[summary.label]}</h3>
         <p>上周 <strong>{countLabel(summary.baseline_count)}</strong></p>
@@ -101,9 +105,5 @@ export function LabelDashboard({ classroom, student, active, initialPerspective 
     </div>}
     {hasData && !demonstration && current?.notes.map((note, index) => <p className={common.muted} key={index}>
       {note}</p>)}
-    {generating && <section className={common.card}><p role="status">正在根据当前标签自动生成解释…</p></section>}
-    {reportError && <section className={common.card}><p role="alert">{reportError}</p>
-      <button type="button" onClick={() => setRefresh((value) => value + 1)}>重试读取与解释</button></section>}
-    {explanation && explanation.perspective === perspective && <AutomaticReport result={explanation} />}
   </div>;
 }
