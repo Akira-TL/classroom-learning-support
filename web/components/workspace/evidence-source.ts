@@ -22,3 +22,19 @@ export function preferredEvidenceTask(results: GenerationResult[], classroom: Cl
     ?? current.filter((result) => result.evidence?.status === "pending").at(-1)
     ?? current.at(-1) ?? results.at(-1))?.task.id ?? "";
 }
+
+export function confirmedQuestionEvidence(
+  results: GenerationResult[], classroom: Classroom, utterances: Utterance[], questionId: string,
+): EvidenceRecord[] {
+  return results.flatMap((result) => {
+    const record = result.evidence;
+    if (!record || result.task.status !== "succeeded" || record.basis.context.question_id !== questionId) return [];
+    const utterance = utterances.find((item) => item.session_id === record.basis.session_id
+      && item.segment_id === record.basis.segment_id);
+    if (!utterance || !["final", "revision"].includes(utterance.phase)
+      || ![utterance.text_review, utterance.identity_review, utterance.question_review]
+        .every((value) => value === "confirmed")) return [];
+    const current = evidenceForSource(record, classroom, utterance);
+    return current.status === "confirmed" ? [current] : [];
+  });
+}

@@ -9,6 +9,8 @@ import { Timeline } from "../timeline";
 import { SourceDetails } from "../speech/source-details";
 import { segmentKey, timeLabel } from "../types";
 import type { WorkspaceView } from "../types";
+import { confirmedQuestionEvidence } from "../evidence-source";
+import { useQuestionEvidence } from "./use-question-evidence";
 import styles from "./panel.module.css";
 
 const tabs = [["overview", "课堂概览"], ["questions", "提问分析"], ["transcript", "课堂实录"]] as const;
@@ -19,6 +21,7 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
   view: WorkspaceView; children: ReactNode;
 }) {
   const [tab, setTab] = useState<(typeof tabs)[number][0]>("questions");
+  const evidence = useQuestionEvidence(classroom.id, active && view === "review" && tab === "questions");
   const question = classroom.questions.find((item) => item.id === current?.question_id) ?? classroom.questions[0];
   const sessionItems = current ? items.filter((item) => item.session_id === current.session_id) : [];
   const end = Math.max(1, ...sessionItems.map((item) => item.end_ms));
@@ -93,19 +96,33 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
         <section role="tabpanel" id="analysis-questions" aria-labelledby="analysis-tab-questions"
           hidden={tab !== "questions"}
           className={styles.content}>
+          {evidence.error && <p role="status">{evidence.error} 当前不展示未能重新核实的解释。</p>}
           {classroom.questions.map((item) => {
             const related = items.filter((entry) => entry.question_id === item.id
               && entry.question_review === "confirmed");
+            const explanations = confirmedQuestionEvidence(evidence.results, classroom, items, item.id);
             return <article className={styles.question} key={item.id}>
               <header><h2>{item.text}</h2><span>教师配置题目</span></header>
               <h3>课堂背景</h3><p>{classroom.objective}</p>
               <h3>教师参考答案</h3><p>{item.reference_answer}</p>
+              <h3>分析</h3>
+              {explanations.length === 0 ? <p>暂无与当前发言版本匹配且经教师确认的学习证据解释。</p>
+                : explanations.map((record) => <section key={record.id}>
+                  <blockquote>{record.content.quote}</blockquote>
+                  <p>{record.content.interpretation}</p>
+                  <p>核验限制：{record.content.limitation}</p>
+                  <button type="button" onClick={() => {
+                    const source = items.find((entry) => entry.session_id === record.basis.session_id
+                      && entry.segment_id === record.basis.segment_id);
+                    if (source) { onSelect(source); setTab("transcript"); }
+                  }}>查看证据原发言 · 版本 {record.basis.utterance_version}</button>
+                </section>)}
               <footer><span>{related.length} 条已核验题目关联</span>
                 {related.map((entry) => <button type="button" key={segmentKey(entry)} onClick={() => {
                   onSelect(entry); setTab("transcript");
                 }}>{timeLabel(entry.start_ms)} 查看发言</button>)}
               </footer>
-              <p className={styles.pending}>教学解释请在核验后进入“AI教学反馈”生成。尚未生成认知层级分析。</p>
+              <p className={styles.pending}>在“AI教学反馈”中生成并核验解释后展示。不根据题目文字推断认知层级。</p>
             </article>;
           })}
         </section>

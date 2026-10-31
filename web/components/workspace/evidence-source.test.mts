@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evidenceForSource, preferredEvidenceTask } from "./evidence-source.ts";
+import { confirmedQuestionEvidence, evidenceForSource, preferredEvidenceTask } from "./evidence-source.ts";
 import type { EvidenceRecord, GenerationResult } from "../../lib/evidence.ts";
 import type { Utterance } from "../../lib/speech.ts";
 import type { Classroom } from "../../lib/types.ts";
@@ -72,4 +72,30 @@ test("没有已确认结果时选择当前待核验初稿，全部过期时历�
   assert.equal(preferredEvidenceTask([pending, stale], classroom, utterance), "pending");
   assert.equal(preferredEvidenceTask([stale], classroom, utterance), "stale");
   assert.equal(preferredEvidenceTask([], classroom, utterance), "");
+});
+
+test("提问分析只引用当前题目且三项核验齐全的已确认解释", () => {
+  const input = [result("confirmed", record), result("pending", { ...record, status: "pending" }),
+    result("rejected", { ...record, status: "rejected" })];
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom, [utterance], "question-1"), [record]);
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom, [utterance], "another-question"), []);
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom,
+    [{ ...utterance, identity_review: "pending" }], "question-1"), []);
+});
+
+test("发言纠错、教学材料改变与来源被撤回立即隐藏旧解释", () => {
+  const input = [result("confirmed", record)];
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom,
+    [{ ...utterance, version: 4 }], "question-1"), []);
+  assert.deepEqual(confirmedQuestionEvidence(input, { ...classroom, objective: "新目标" },
+    [utterance], "question-1"), []);
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom,
+    [{ ...utterance, phase: "withdraw" }], "question-1"), []);
+  assert.deepEqual(confirmedQuestionEvidence(input, classroom, [], "question-1"), []);
+});
+
+test("任务过期即使携带旧已确认结果也不能进入提问分析", () => {
+  const stale = result("stale", record);
+  assert.deepEqual(confirmedQuestionEvidence([{ ...stale, task: { ...stale.task, status: "stale" } }],
+    classroom, [utterance], "question-1"), []);
 });
