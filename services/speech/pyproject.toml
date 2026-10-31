@@ -3,7 +3,7 @@ name = "classroom-speech"
 version = "0.1.0"
 description = "课堂语音模块：双通道去噪、方位锚定分离、转写接入与契约事件服务"
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.12"
 dependencies = [
     "fastapi>=0.110",
     "matplotlib>=3.7",
@@ -18,12 +18,21 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+asr = [
+    "funasr>=1.2,<2",
+    "modelscope>=1.20,<2",
+    "torch==2.5.1",
+    "torchaudio==2.5.1",
+    "transformers>=4.32,<5",
+]
 # 现成模型：首次运行自动下载权重，需联网与 GPU；建议 Python 3.10/3.11
 neural = [
     "funasr>=1.2",
     "modelscope>=1.20",
-    "torch>=2.1",
-    "torchaudio>=2.1",
+    "torch==2.5.1",
+    "torchaudio==2.5.1",
+    "torchvision==0.20.1",
+    "transformers>=4.32,<5",
     "clearvoice>=0.1",
 ]
 
@@ -36,3 +45,13 @@ dev = [
     "httpx>=0.28.1",
     "pytest>=8",
 ]
+
+[[tool.uv.index]]
+name = "pytorch-cu118"
+url = "https://download.pytorch.org/whl/cu118"
+explicit = true
+
+[tool.uv.sources]
+torch = [{ index = "pytorch-cu118", marker = "sys_platform == 'win32'" }]
+torchaudio = [{ index = "pytorch-cu118", marker = "sys_platform == 'win32'" }]
+torchvision = [{ index = "pytorch-cu118", marker = "sys_platform == 'win32'" }]

@@ -1,5 +1,16 @@
 #!/usr/bin/env bash
 set -euo pipefail
-ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
-PID_FILE="$ROOT/logs/speech/server.pid"
-if [[ -f "$PID_FILE" ]]; then kill "$(cat "$PID_FILE")" 2>/dev/null || true; rm -f "$PID_FILE"; echo "已停止"; else echo "未在运行"; fi
+ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
+export CLASSROOM_SPEECH_ROOT="$(cygpath -w "$ROOT/services/speech")"
+export CLASSROOM_SPEECH_PORT="${SPEECH_PORT:-8765}"
+powershell.exe -NoProfile -Command '
+  $listeners = Get-NetTCPConnection -LocalPort $env:CLASSROOM_SPEECH_PORT -State Listen -ErrorAction SilentlyContinue
+  foreach ($listener in $listeners) {
+    $process = Get-CimInstance Win32_Process -Filter ("ProcessId=" + $listener.OwningProcess)
+    if ($process.CommandLine -and $process.CommandLine.Contains($env:CLASSROOM_SPEECH_ROOT) -and
+        $process.CommandLine.Contains("classroom_speech.server:app")) {
+      Stop-Process -Id $listener.OwningProcess -Force
+      Write-Output "已停止本项目语音服务"
+    } else { Write-Output "保留其他进程" }
+  }
+'
