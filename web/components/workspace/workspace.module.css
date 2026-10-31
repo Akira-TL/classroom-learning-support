@@ -1,4 +1,4 @@
-.root { color: #17233f; font-size: 14px; line-height: 1.65; }
+.root { color: #17233f; font-size: 16px; line-height: 1.65; }
 .root [hidden] { display: none !important; }
 .root h2, .root h3, .root h4, .root h5 { color: #16233d; line-height: 1.45; margin: 0 0 14px; }
 .root h2 { font-size: 20px; }
@@ -71,9 +71,14 @@
 .inspector { min-width: 0; }
 .inspector > article > div > section, .reviewCard { margin-bottom: 18px; }
 .empty { background: #f7faff; color: #6d7c92; border: 1px dashed #d5dfed; padding: 24px; border-radius: 8px; }
-.selection { display: flex; align-items: center; gap: 18px; margin-bottom: 18px; }
-.selection label { flex: 1; max-width: 700px; margin: 0; }
+.selection { display: flex; align-items: center; gap: 18px; margin-bottom: 8px; }
+.root .selection label { display: flex; align-items: center; gap: 12px; flex: 1; max-width: 850px;
+  margin: 0; white-space: nowrap; font-size: 13px; }
+.root .selection select { margin: 0; min-width: 0; font-size: 14px; }
 .selection a { white-space: nowrap; }
+.workspaceHeading { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin: 8px 0; }
+.root .workspaceHeading h3 { margin: 0; font-size: 16px; }
+.root .workspaceHeading button { margin: 0; min-height: 30px; padding: 3px 9px; font-size: 12px; }
 .root .reviewCard { padding: 16px; margin-bottom: 12px; }
 .root .reviewCard h2 { font-size: 18px; margin: 0; }
 .root .compactFieldset { padding: 0; border: 0; margin: 14px 0 0; }
@@ -90,7 +95,7 @@
 .root .reviewCard .actions { margin-top: 8px; }
 .root .reviewCard .actions button { margin: 0; min-height: 34px; padding: 6px 10px; font-size: 12px; }
 .root .evidenceReading h4 { margin: 16px 0 7px; }
-.root .evidenceReading p { margin: 0 0 14px; font-size: 13px; }
+.root .evidenceReading p { margin: 0 0 14px; font-size: 15px; }
 .root .evidenceEditor { margin: 8px 0; }
 .root .evidenceEditor > summary { font-size: 12px; }
 .evidenceActions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 16px; }
@@ -131,6 +136,6 @@
   .reviewGrid > *, .evidenceGrid > * { margin-bottom: 16px; }
   .card, .supportCard { padding: 18px; }
   .selection { align-items: flex-start; flex-direction: column; }
-  .selection label { width: 100%; }
+  .root .selection label { width: 100%; flex-direction: column; align-items: stretch; gap: 6px; }
   .compactRow { grid-template-columns: minmax(0,1.2fr) minmax(85px,1fr); }
 }

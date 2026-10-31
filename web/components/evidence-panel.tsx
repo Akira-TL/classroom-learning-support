@@ -109,7 +109,7 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
     </details>
     </details>
     </div>
-    {view !== "review" && <div className={styles.cardHeading}>
+    {view !== "review" && <div className={styles.workspaceHeading}>
       <h3>{view === "teaching" ? "学习证据 → 教学支持" : "发布与接收预览"}</h3>
       <button disabled={loading} onClick={() => void refresh()}>{loading ? "正在核实…" : "核实证据状态"}</button>
     </div>}
