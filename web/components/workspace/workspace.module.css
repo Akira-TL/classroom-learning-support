@@ -13,6 +13,7 @@
 .root button:hover:not(:disabled) { background: #edf5ff; border-color: #2674e9; }
 .root button:disabled { color: #8a95a7; background: #eff2f6; border-color: #e0e5ee; cursor: not-allowed; }
 .root button[type="submit"], .root .primary { color: #fff; background: #146cf5; border-color: #146cf5; }
+.root button[class~="primary-button"]:not(:disabled) { color: #fff; background: #146cf5; border-color: #146cf5; }
 .root button[type="submit"]:disabled { background: #e1e6ee; color: #8a95a7; border-color: #e1e6ee; }
 .root :focus-visible { outline: 3px solid #2378f4; outline-offset: 3px; }
 .root label { display: block; margin: 14px 0; color: #283750; font-weight: 550; }
@@ -101,7 +102,7 @@
   .reviewGrid { grid-template-columns: minmax(210px,.75fr) minmax(290px,1fr); }
   .inspector { grid-column: 1 / -1; }
   .evidenceGrid { grid-template-columns: minmax(200px,.65fr) minmax(330px,1fr); }
-  .evidenceGrid > :last-child { grid-column: 2; }
+  .evidenceGrid > .planColumn { grid-column: 2; }
   .publishingGrid { grid-template-columns: minmax(0,1fr); }
 }
 @media (max-width: 800px) {

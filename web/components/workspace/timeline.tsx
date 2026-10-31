@@ -7,9 +7,9 @@ import { AudioPanel } from "../audio-panel";
 import { segmentKey, timeLabel } from "./types";
 import styles from "./workspace.module.css";
 
-export function Timeline({ classroom, items, selected, onSelect, onSaved }: {
+export function Timeline({ classroom, items, selected, onSelect, onSaved, active = true }: {
   classroom: Classroom; items: Utterance[]; selected: string;
-  onSelect: (item: Utterance) => void; onSaved: () => Promise<void>;
+  onSelect: (item: Utterance) => void; onSaved: () => Promise<void>; active?: boolean;
 }) {
   const current = items.find((item) => segmentKey(item) === selected);
   return <section className={`${styles.card} ${styles.timeline}`} aria-label="课堂语音时间线">
@@ -18,8 +18,13 @@ export function Timeline({ classroom, items, selected, onSelect, onSaved }: {
     <div className={styles.playback}>
       <h3>{current ? `${timeLabel(current.start_ms)}—${timeLabel(current.end_ms)}` : "选择发言后回听"}</h3>
       <p className={styles.muted}>播放使用已归档原音频；时间范围来自上游记录，未生成示意波形。</p>
+      {current && <><p className={styles.eyebrow}>所选片段 · 上游原话</p>
+        <blockquote>{current.upstream_text}</blockquote>
+        {current.teacher_text && <p>教师修订：{current.teacher_text}</p>}
+      </>}
       {items.map((item) => <div key={segmentKey(item)} hidden={segmentKey(item) !== selected}>
-        <AudioPanel classroomId={classroom.id} utterance={item} onSaved={onSaved} />
+        <AudioPanel classroomId={classroom.id} utterance={item} onSaved={onSaved}
+          active={active && segmentKey(item) === selected} />
       </div>)}
     </div>
     <h3>学生发言</h3>

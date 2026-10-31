@@ -13,7 +13,9 @@ import { segmentKey, timeLabel } from "./workspace/types";
 import type { WorkspaceView } from "./workspace/types";
 import styles from "./workspace/workspace.module.css";
 
-export function SpeechPanel({ classroom, view = "review" }: { classroom: Classroom; view?: WorkspaceView }) {
+export function SpeechPanel({ classroom, view = "review", onViewChange }: {
+  classroom: Classroom; view?: WorkspaceView; onViewChange?: (view: WorkspaceView) => void;
+}) {
   const [timeline, setTimeline] = useState<Utterance[]>([]);
   const [events, setEvents] = useState<SpeechEvent[]>([]);
   const [plan, setPlan] = useState<SpeechEvent[]>([]);
@@ -33,6 +35,14 @@ export function SpeechPanel({ classroom, view = "review" }: { classroom: Classro
     window.history.replaceState(null, "", `#${encodeURIComponent(anchor)}`);
   }
 
+  function locate(item: Utterance) {
+    select(item); onViewChange?.("review");
+    requestAnimationFrame(() => {
+      document.getElementById(`utterance-${item.session_id}-${item.segment_id}`)
+        ?.scrollIntoView({ block: "center", behavior: "smooth" });
+    });
+  }
+
   useEffect(() => {
     function followSource() {
       let anchor = "";
@@ -40,9 +50,18 @@ export function SpeechPanel({ classroom, view = "review" }: { classroom: Classro
       const item = timeline.find((entry) => `utterance-${entry.session_id}-${entry.segment_id}` === anchor);
       if (item) setSelection(segmentKey(item));
     }
-    followSource(); window.addEventListener("hashchange", followSource);
-    return () => window.removeEventListener("hashchange", followSource);
-  }, [timeline]);
+    function navigateSource() {
+      followSource();
+      let anchor = "";
+      try { anchor = decodeURIComponent(window.location.hash.slice(1)); } catch { return; }
+      if (timeline.some((entry) => `utterance-${entry.session_id}-${entry.segment_id}` === anchor)) {
+        onViewChange?.("review");
+        requestAnimationFrame(() => document.getElementById(anchor)?.scrollIntoView({ block: "center" }));
+      }
+    }
+    followSource(); window.addEventListener("hashchange", navigateSource);
+    return () => window.removeEventListener("hashchange", navigateSource);
+  }, [timeline, onViewChange]);
 
   async function refresh() {
     const [nextTimeline, nextEvents] = await Promise.all([
@@ -110,7 +129,7 @@ export function SpeechPanel({ classroom, view = "review" }: { classroom: Classro
     <div className={view === "review" ? styles.reviewGrid : undefined}>
       <div hidden={view !== "review"}><QuestionContext classroom={classroom} utterance={current} /></div>
       <div hidden={view !== "review"}><Timeline classroom={classroom} items={timeline} selected={selected}
-        onSelect={select} onSaved={refresh} /></div>
+        onSelect={select} onSaved={refresh} active={view === "review"} /></div>
       <div className={styles.inspector}>
       {timeline.length === 0 && view !== "review" && <div className={styles.empty}>
         请先接收发言并完成核验，再进入教学支持或发布。
@@ -125,8 +144,11 @@ export function SpeechPanel({ classroom, view = "review" }: { classroom: Classro
           </details>
         </div>
         <div className={view === "publishing" ? styles.publishingGrid : undefined}>
-          <EvidencePanel classroom={classroom} utterance={item} view={view} />
+          <EvidencePanel classroom={classroom} utterance={item} view={view} onLocateSource={() => locate(item)} />
           <div hidden={view !== "publishing"} className={styles.card}>
+            <div className={styles.notice}>事实修正后请重新核验、生成并发布新版。
+              人工编辑记录保留；已下载的离线副本不能远程收回。</div>
+            <button onClick={() => locate(item)}>返回发言重新核验</button>
             <CorrectionPanel classroom={classroom} utterance={item} onSaved={refresh} />
           </div>
         </div>

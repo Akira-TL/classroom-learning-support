@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { z } from "zod";
 import type { Utterance } from "../lib/speech";
 import styles from "./workspace/workspace.module.css";
@@ -8,12 +8,14 @@ import styles from "./workspace/workspace.module.css";
 const assetSchema = z.object({ id: z.string(), duration_ms: z.number(), source: z.literal("teacher_uploaded_audio") });
 const errorSchema = z.object({ detail: z.string() });
 
-export function AudioPanel({ classroomId, utterance, onSaved }: {
-  classroomId: string; utterance: Utterance; onSaved: () => Promise<void>;
+export function AudioPanel({ classroomId, utterance, onSaved, active = true }: {
+  classroomId: string; utterance: Utterance; onSaved: () => Promise<void>; active?: boolean;
 }) {
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const player = useRef<HTMLAudioElement>(null);
+  useEffect(() => { if (!active) player.current?.pause(); }, [active]);
   const base = `/api/classrooms/${encodeURIComponent(classroomId)}/speech/`
     + encodeURIComponent(utterance.session_id);
 
@@ -41,7 +43,7 @@ export function AudioPanel({ classroomId, utterance, onSaved }: {
   return <div className={styles.audio}>
     {utterance.audio_available ? <>
       <p className={styles.muted}>已归档原音频 · 定位到 {utterance.start_ms}—{utterance.end_ms} 毫秒</p>
-      <audio controls preload="none" aria-label="发言原音频"
+      <audio ref={player} controls preload="none" aria-label="发言原音频"
         src={`${base}/${encodeURIComponent(utterance.segment_id)}/audio`
           + `#t=${utterance.start_ms / 1000},${utterance.end_ms / 1000}`} />
     </> : <>
