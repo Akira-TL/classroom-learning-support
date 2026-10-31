@@ -45,7 +45,7 @@ def compare_tags(db: sqlite3.Connection, store: TagStore, teacher: str, periods:
     recent = [item for item in records if periods.current_start <= item.observed_on <= periods.current_end]
     return TagComparison(periods=periods, baseline=baseline, current=recent,
                          summaries=[summary(label, baseline, recent) for label in LABELS], notes=[
-                             "标签来自所注明的外部材料及教师核验，不代表本系统检测算法的实测能力",
+                             "标签来自所注明的外部材料及其标注信息，不代表本系统检测算法的实测能力",
                              "次数变化需结合采集时长、设备、距离、环境和标注口径；不作疾病或情绪判断",
                              "未核实来源标签参与描述性统计，但其真实性和学生归属仍以提供者材料为依据",
                          ])

@@ -51,10 +51,9 @@ class TagStore:
                     if TagImport.model_validate(existing.model_dump(include=set(TagImport.model_fields))) == payload:
                         return existing
                     raise StoreError(409, "同一导入标识不能用于不同标注，请修改原记录并递增版本")
-                if (existing.student_id == payload.student_id and existing.session_id == payload.session_id
-                        and existing.source_name == payload.source_name
-                        and existing.observed_on == payload.observed_on):
-                    raise StoreError(409, "同一学生和音频来源已有标注，请更新原记录，不能重复累计次数")
+                if (existing.classroom_id == cid and existing.student_id == payload.student_id
+                        and existing.session_id == payload.session_id):
+                    raise StoreError(409, "同一课堂、学生和采集会话已有标注，请用PUT更新原记录，不能重复累计次数或时长")
             record = TagBatch(**payload.model_dump(), id=identity or uuid4().hex, classroom_id=cid, teacher_id=teacher,
                               revision=previous.revision + 1 if previous else 1)
             db.execute("INSERT OR REPLACE INTO care_tag_batches VALUES (?,?,?,?)",

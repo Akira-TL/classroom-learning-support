@@ -64,6 +64,11 @@ class TagImport(StrictModel):
     def unique(self) -> Self:
         if len({tag.tag_id for tag in self.tags}) != len(self.tags):
             raise ValueError("同次导入标签标识不能重复")
+        if self.captured_duration_ms is not None and (
+            any(tag.end_ms > self.captured_duration_ms for tag in self.tags)
+            or any(item.end_ms > self.captured_duration_ms for item in self.transcripts)
+        ):
+            raise ValueError("标签或转写时间超出采集时长，请核对采集范围和时间基准")
         return self
 
 
