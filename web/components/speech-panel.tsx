@@ -25,8 +25,11 @@ export function SpeechPanel({ classroom, view = "review", onViewChange }: {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [selection, setSelection] = useState("");
+  const preferred = timeline.filter((item) => ["final", "revision"].includes(item.phase)
+    && [item.text_review, item.identity_review, item.question_review].every((state) => state === "confirmed"))
+    .at(-1) ?? timeline.at(-1);
   const selected = timeline.some((item) => segmentKey(item) === selection)
-    ? selection : timeline[0] ? segmentKey(timeline[0]) : "";
+    ? selection : preferred ? segmentKey(preferred) : "";
   const current = timeline.find((item) => segmentKey(item) === selected);
 
   function select(item: Utterance) {
@@ -108,12 +111,11 @@ export function SpeechPanel({ classroom, view = "review", onViewChange }: {
 
   const title = { review: "核验工作台", teaching: "教学支持", publishing: "发布与反馈" }[view];
   return <section className={styles.root} aria-label="语音结果与教师核验">
-    <header className={styles.header}><div><h2>{title}</h2>
-      <span className={styles.muted}>原话可追溯 · 教师核验后使用</span></div>
-      <button disabled={busy} onClick={() => void manualRefresh()}>刷新来源与核验状态</button>
+    <header className={styles.toolbar}><h2 className={styles.srOnly}>{title}</h2>
+      <p role="status" aria-live="polite">{busy ? "正在发送或读取…" : notice || "原话可追溯 · 教师核验后使用"}</p>
+      <button disabled={busy} onClick={() => void manualRefresh()}>刷新来源</button>
     </header>
     {error && <p role="alert">{error} 继续会使用同一事件标识重试，不会假装成功。</p>}
-    <p role="status" aria-live="polite">{busy ? "正在发送或读取…" : notice}</p>
     <div hidden={view === "review"} className={styles.selection}>
       <label>当前发言<select value={selected} onChange={(event) => {
         const item = timeline.find((entry) => segmentKey(entry) === event.target.value);
@@ -137,11 +139,6 @@ export function SpeechPanel({ classroom, view = "review", onViewChange }: {
       {timeline.map((item) => <article key={segmentKey(item)} hidden={segmentKey(item) !== selected}>
         <div hidden={view !== "review"}>
           <UtteranceReview classroom={classroom} utterance={item} onSaved={refresh} showAudio={false} />
-          <details className={`${styles.card} ${styles.audit}`}><summary>查看所选原话与接收版本</summary>
-            <p>上游原话：{item.upstream_text}</p><p>教师修订：{item.teacher_text ?? "未修订"}</p>
-            <p>{phaseNames[item.phase]} · 会话 {item.session_id} · 片段 {item.segment_id}</p>
-            <p>匿名声源 {item.source_ref ?? "未提供"} · 上游修订 {item.revision} · 应用版本 {item.version}</p>
-          </details>
         </div>
         <div className={view === "publishing" ? styles.publishingGrid : undefined}>
           <EvidencePanel classroom={classroom} utterance={item} view={view} onLocateSource={() => locate(item)} />
@@ -152,6 +149,11 @@ export function SpeechPanel({ classroom, view = "review", onViewChange }: {
             <CorrectionPanel classroom={classroom} utterance={item} onSaved={refresh} />
           </div>
         </div>
+        <details hidden={view !== "review"} className={styles.audit}><summary>所选原话与接收版本</summary>
+          <p>上游原话：{item.upstream_text}</p><p>教师修订：{item.teacher_text ?? "未修订"}</p>
+          <p>{phaseNames[item.phase]} · 会话 {item.session_id} · 片段 {item.segment_id}</p>
+          <p>匿名声源 {item.source_ref ?? "未提供"} · 上游修订 {item.revision} · 应用版本 {item.version}</p>
+        </details>
       </article>)}
       </div>
     </div>

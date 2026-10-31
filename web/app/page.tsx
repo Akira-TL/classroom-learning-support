@@ -92,6 +92,10 @@ export default function Home() {
 
   return <Shell user={user} activeView={user?.role === "teacher" ? view : user?.role ?? "classrooms"}
     onNavigate={setView} actions={user && <>
+      {user.role === "teacher" && selected && <>
+        <span className="badge badge-warning">真实语音服务尚待联调</span>
+        <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
+      </>}
       <button disabled={busy} className="header-session" onClick={() => void perform(async () => {
         const current = await api.me(); setUser(current); setNotice("当前会话有效。");
       })}>检查当前会话</button>

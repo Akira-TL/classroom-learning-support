@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { evidenceForSource } from "./evidence-source.ts";
-import type { EvidenceRecord } from "../../lib/evidence.ts";
+import { evidenceForSource, preferredEvidenceTask } from "./evidence-source.ts";
+import type { EvidenceRecord, GenerationResult } from "../../lib/evidence.ts";
 import type { Utterance } from "../../lib/speech.ts";
 import type { Classroom } from "../../lib/types.ts";
 
@@ -54,4 +54,22 @@ test("教学目标、题干或图形依据变化使旧证据失效", () => {
 test("原记录已失效时即使当前文字相同也不能自行恢复有效", () => {
   const stale: EvidenceRecord = { ...record, status: "stale" };
   assert.equal(evidenceForSource(stale, classroom, utterance).status, "stale");
+});
+
+function result(id: string, evidence: EvidenceRecord | null): GenerationResult {
+  const request = { session_id: "session-1", segment_id: "segment-1", expected_version: 3, idempotency_key: id };
+  return { evidence, task: { id, classroom_id: "class-1", request, basis: record.basis,
+    status: evidence ? "succeeded" : "failed", error: null, discarded_draft: null, origin: "deepseek" } };
+}
+test("默认优先最新当前已确认结果，旧失效稿和晚到失败任务不抢默认选择", () => {
+  const results = [result("old-stale", { ...record, status: "stale" }), result("confirmed-1", record),
+    result("confirmed-2", record), result("failed-last", null)];
+  assert.equal(preferredEvidenceTask(results, classroom, utterance), "confirmed-2");
+});
+test("没有已确认结果时选择当前待核验初稿，全部过期时历史仍可访问", () => {
+  const stale = result("stale", { ...record, status: "stale" });
+  const pending = result("pending", { ...record, status: "pending" });
+  assert.equal(preferredEvidenceTask([pending, stale], classroom, utterance), "pending");
+  assert.equal(preferredEvidenceTask([stale], classroom, utterance), "stale");
+  assert.equal(preferredEvidenceTask([], classroom, utterance), "");
 });

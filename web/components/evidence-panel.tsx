@@ -7,7 +7,7 @@ import { evidenceApi, evidenceNames, mergeResult, taskNames } from "../lib/evide
 import type { EvidenceRecord, GenerateEvidence, GenerationResult } from "../lib/evidence";
 import { ManualEvidencePanel } from "./manual-evidence/panel";
 import { EvidenceWorkspace } from "./workspace/evidence-workspace";
-import { evidenceForSource } from "./workspace/evidence-source";
+import { evidenceForSource, preferredEvidenceTask } from "./workspace/evidence-source";
 import type { WorkspaceView } from "./workspace/types";
 import styles from "./workspace/workspace.module.css";
 
@@ -23,7 +23,8 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
   const [notice, setNotice] = useState("");
   const [selectedTask, setSelectedTask] = useState("");
   const selected = results.some((result) => result.task.id === selectedTask)
-    ? selectedTask : results.at(-1)?.task.id ?? "";
+    ? selectedTask : preferredEvidenceTask(results, classroom, utterance);
+  const hasEvidence = results.some((result) => result.evidence !== null);
   const verified = [utterance.text_review, utterance.identity_review, utterance.question_review]
     .every((state) => state === "confirmed") && ["final", "revision"].includes(utterance.phase);
 
@@ -88,11 +89,12 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
 
   return <section aria-label="学习证据分析" className={view === "review" ? styles.card : undefined}>
     <div hidden={view !== "review"}>
-    <h3>建立学习证据</h3>
-    <p className={styles.muted}>明确点击才调用 DeepSeek；必要的匿名教学文本发送至云端，输出仍需核验。</p>
-    {!verified && <p>请先完成文字、身份和题目的分别核验；临时、撤回或无法判断的发言不能生成个人证据。</p>}
     {error && <p role="alert">{error} 未确认请求成功；可重试同一次请求，或明确重新生成。</p>}
     <p role="status" aria-live="polite">{busy ? "请求处理中，尚未确认生成成功…" : notice}</p>
+    <details className={styles.creationControls} open={!hasEvidence}>
+    <summary>{hasEvidence ? "建立或生成另一份学习证据" : "建立学习证据"}</summary>
+    <p className={styles.muted}>明确点击才调用 DeepSeek；必要的匿名教学文本发送至云端，输出仍需核验。</p>
+    {!verified && <p>请先完成文字、身份和题目的分别核验；临时、撤回或无法判断的发言不能生成个人证据。</p>}
     <button disabled={busy || loading || !loaded || !verified} onClick={() => void generate(false)}>
       {attempt ? "重试同一次生成请求" : "生成学习证据"}
     </button>
@@ -105,6 +107,7 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
     <details><summary>不调用模型 · 教师人工录入</summary>
       <ManualEvidencePanel classroomId={classroom.id} utterance={utterance} onSaved={() => refresh(true)} />
     </details>
+    </details>
     </div>
     {view !== "review" && <div className={styles.cardHeading}>
       <h3>{view === "teaching" ? "学习证据 → 教学支持" : "发布与接收预览"}</h3>
@@ -114,7 +117,9 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
     {!loading && results.length === 0 && <div className={styles.empty}>
       本发言尚无生成或人工录入任务。请先在核验工作台建立证据。
     </div>}
-    {results.length > 0 && <div className={styles.taskSelect}>
+    {results.length > 0 && <details className={styles.historySelect}>
+      <summary>证据与历史任务（{results.length} 条）</summary>
+      <div className={styles.taskSelect}>
       <label>查看证据与历史任务<select value={selected} onChange={(event) => setSelectedTask(event.target.value)}>
         {results.map((result, index) => <option key={result.task.id} value={result.task.id}>
           记录 {index + 1} · {result.task.origin === "teacher_manual" ? "教师人工稿" : "模型初稿"} ·
@@ -124,14 +129,8 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
             : taskNames[result.task.status]}
         </option>)}
       </select></label>
-    </div>}
+    </div></details>}
     {results.map((result) => <article key={result.task.id} hidden={result.task.id !== selected}>
-      <details className={styles.audit}><summary>生成任务与依据记录</summary>
-      <p>任务 {result.task.id}：{result.task.origin === "teacher_manual"
-        ? result.task.status === "succeeded" ? "人工初稿已保存，仍需教师核验" : taskNames[result.task.status]
-        : taskNames[result.task.status]}；
-        依据发言版本 {result.task.basis.utterance_version}</p>
-      </details>
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <details>
         <summary>已丢弃的过期返回，仅供核对，未采用为有效证据</summary>
@@ -141,6 +140,11 @@ export function EvidencePanel({ classroom, utterance, view = "review", onLocateS
       {result.evidence ? <EvidenceWorkspace classroom={classroom} utterance={utterance}
         record={result.evidence} view={view} onSaved={updateRecord} onLocateSource={onLocateSource} />
         : <p>此任务没有可供确认的证据记录。</p>}
+      <details className={styles.audit}><summary>生成任务与依据记录</summary>
+        <p>任务 {result.task.id}：{result.task.origin === "teacher_manual"
+          ? result.task.status === "succeeded" ? "人工初稿已保存，仍需教师核验" : taskNames[result.task.status]
+          : taskNames[result.task.status]}；依据发言版本 {result.task.basis.utterance_version}</p>
+      </details>
     </article>)}
   </section>;
 }
