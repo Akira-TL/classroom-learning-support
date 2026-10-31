@@ -28,7 +28,10 @@ export function ClassroomAnalysis({ classroom, items, current, selected, onSelec
   const confirmed = items.filter((item) => item.text_review === "confirmed"
     && item.identity_review === "confirmed" && item.question_review === "confirmed");
   const rows = [
-    { name: "已关联学生", values: sessionItems.filter((item) => item.identity_review === "confirmed") },
+    { name: "教师发言", values: sessionItems.filter((item) => item.source_kind === "recorded_result"
+      && item.source_ref === "teacher") },
+    { name: "学生发言", values: sessionItems.filter((item) => item.identity_review === "confirmed"
+      || item.source_kind === "recorded_result" && /^student-\d{2,4}$/.test(item.source_ref ?? "")) },
     { name: "身份待核验", values: sessionItems.filter((item) => item.identity_review !== "confirmed") },
     { name: "重叠发言", values: sessionItems.filter((item) => item.overlap) },
     { name: "内容待核验", values: sessionItems.filter((item) => item.text_review !== "confirmed") },

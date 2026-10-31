@@ -5,7 +5,7 @@ import type { Utterance } from "../../lib/speech";
 import { phaseNames, sourceNames } from "../../lib/speech";
 import { AudioPanel } from "../audio-panel";
 import { SourceDetails } from "./speech/source-details";
-import { segmentKey, timeLabel } from "./types";
+import { segmentKey, speakerLabel, timeLabel } from "./types";
 import styles from "./workspace.module.css";
 
 export function Timeline({ classroom, items, selected, onSelect, onSaved, active = true, showPlayback = true }: {
@@ -29,7 +29,7 @@ export function Timeline({ classroom, items, selected, onSelect, onSaved, active
           active={active && segmentKey(item) === selected} />
       </div>)}
     </div>}
-    <h3>学生发言</h3>
+    <h3>课堂发言</h3>
     {items.length === 0 && <div className={styles.empty}>
       <h3>尚无发言片段</h3><p>接收上游结果，或在下方展开模拟事件回放开始演示。</p>
     </div>}
@@ -43,7 +43,7 @@ export function Timeline({ classroom, items, selected, onSelect, onSaved, active
             <button className={styles.timelineButton} aria-pressed={selected === key} onClick={() => onSelect(item)}>
               <span className={styles.rowMeta}><time>{timeLabel(item.start_ms)}—{timeLabel(item.end_ms)}</time>
                 <span className={styles.sourceBadge}>{sourceNames[item.source_kind]}</span></span>
-              <span className={styles.rowSpeaker}>{item.student_alias ?? "学生归属待核验"}
+              <span className={styles.rowSpeaker}>{speakerLabel(item)}
                 <span className={confirmed ? styles.good : styles.warning}>{confirmed ? "三项已核验" : "待核验"}</span>
               </span>
               <span className={styles.transcript}>{item.teacher_text ?? (item.upstream_text || "未识别出文字")}</span>
