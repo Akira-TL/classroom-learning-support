@@ -63,6 +63,22 @@ def test_recipient_binding_and_perspective_are_enforced(environment: Environment
             "comparison": periods() | {"student_id": "student-02"}}).status_code == 403
 
 
+def test_demo_report_keeps_counts_without_source_metadata(environment: Environment, monkeypatch):
+    calls = []
+    install_model(monkeypatch, calls)
+    payload = batch(count=5) | {"data_origin": "demonstration", "source_description": "内部制作说明"}
+    imported = environment.client.post(f"/api/classrooms/{environment.cid}/care/tag-batches", json=payload)
+    assert imported.status_code == 200
+    generated = environment.client.post(f"/api/classrooms/{environment.cid}/care/explanations", json={
+        "comparison": periods(), "perspective": "teacher"})
+    assert generated.status_code == 200
+    content = json.loads(calls[0].content)["messages"][1]["content"]
+    assert "内部制作说明" not in content and "source_description" not in content and "identity_confirmed" not in content
+    metrics = json.loads(content)["metrics"]
+    cough = next(item for item in metrics if item["label"] == "cough")
+    assert cough["current_count"] == 5 and cough["baseline_count"] is None
+
+
 def test_changed_source_during_generation_is_not_saved_as_current(environment: Environment, monkeypatch):
     url = f"/api/classrooms/{environment.cid}/care/tag-batches"
     imported = environment.client.post(url, json=batch()).json()
