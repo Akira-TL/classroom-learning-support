@@ -19,6 +19,7 @@ export function LabelPeriod({ title, batches, active, allowAudio, onSaved }: {
     {batches.map((batch) => {
       const extent = batch.captured_duration_ms ?? Math.max(...batch.tags.map((tag) => tag.end_ms), 1);
       const demonstration = batch.data_origin === "demonstration";
+      const events = batch.tags.filter((tag) => tag.count > 0);
       return <article key={batch.id} className={styles.batch}>
         <header><time>{batch.observed_on}</time>
           {!demonstration && <span>提供的标注</span>}</header>
@@ -27,14 +28,15 @@ export function LabelPeriod({ title, batches, active, allowAudio, onSaved }: {
         <p className={styles.muted}>{batch.captured_duration_ms === null
           ? "完整时长未知" : `时长 ${timeLabel(batch.captured_duration_ms)}`}</p>
         <div className={styles.timeline} aria-label={`${title}标签时间分布`}>
-          {batch.tags.map((tag) => <button key={tag.tag_id} type="button"
+          {events.map((tag) => <button key={tag.tag_id} type="button"
             aria-label={`${tag.original_label} ${timeLabel(tag.start_ms)}至${timeLabel(tag.end_ms)}`}
             title={`${tag.original_label} · ${tag.count}次`} onClick={() => select(batch, tag)}
             style={{ left: `${tag.start_ms / extent * 100}%`,
               width: `${Math.max(.8,(tag.end_ms - tag.start_ms) / extent * 100)}%` }} />)}
         </div>
         <div className={styles.times}><span>00:00</span><span>{timeLabel(extent)}</span></div>
-        {batch.tags.map((tag) => <div key={tag.tag_id} className={styles.tag}>
+        {events.length === 0 && <p>此时段无相关事件。</p>}
+        {events.map((tag) => <div key={tag.tag_id} className={styles.tag}>
           <button type="button" aria-pressed={selected === `${batch.id}/${tag.tag_id}`}
             onClick={() => select(batch, tag)}>{tagNames[tag.label]} · {tag.count} 次 ·
             {timeLabel(tag.start_ms)}—{timeLabel(tag.end_ms)}</button>
