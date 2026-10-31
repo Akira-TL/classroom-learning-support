@@ -1,0 +1,748 @@
+{
+  "agent_event": {
+    "anchor_id": "agent_evt_001",
+    "type": "student_emotion_abnormal",
+    "at": "00:10:23",
+    "before_s": 30,
+    "after_s": 60
+  },
+  "schema": "speech.window.v0.1",
+  "protocol_version": "speech.v0.1",
+  "session_id": "ses_lesson_demo",
+  "data_origin": "simulated",
+  "timebase": {
+    "unit": "ms",
+    "origin": "session_sample_0",
+    "sample_rate": 16000,
+    "capture_started_unix_ms": 1793000000000,
+    "wall_clock_source": "client",
+    "note": "会话毫秒 = 样本序号 / 采样率；墙钟只用于换算，可能有采集端时钟漂移"
+  },
+  "requested": {
+    "from_ms": 593000,
+    "to_ms": 683000
+  },
+  "window": {
+    "from_ms": 593000,
+    "to_ms": 683000,
+    "from_clock": "00:09:53.000",
+    "to_clock": "00:11:23.000"
+  },
+  "recorded_until_ms": 710000,
+  "processed_until_ms": 710000,
+  "session_ended": true,
+  "complete": true,
+  "audio": {
+    "raw_ref": "aud_ses_lesson_demo_raw",
+    "from_ms": 593000,
+    "to_ms": 683000,
+    "duration_ms": 90000,
+    "channels": "mic0 单声道回放；stereo 为原始双通道",
+    "note": "片段第 0 毫秒 = 会话时间 from_ms；发言的 offset_in_clip_ms 即播放器内位置"
+  },
+  "utterances": [
+    {
+      "segment_id": "seg_0002",
+      "start_ms": 590960,
+      "end_ms": 596630,
+      "start_clock": "00:09:50.960",
+      "offset_in_clip_ms": -2040,
+      "clipped_by_window": true,
+      "text": "请大家看黑板上的图形，每块是四分之一吗？",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_02",
+        "source_id": "src_spk_02",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": 0.0,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0002",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.904
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0002_denoised",
+          "kind": "denoised",
+          "offset_ms": 590960,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_791194163626",
+        "evt_694b14521516"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 26370,
+      "order": 1
+    },
+    {
+      "segment_id": "seg_0003",
+      "start_ms": 597900,
+      "end_ms": 601830,
+      "start_clock": "00:09:57.900",
+      "offset_in_clip_ms": 4900,
+      "clipped_by_window": false,
+      "text": "有四块就是四分之一。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_03",
+        "source_id": "src_spk_03",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -40.9,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0003",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.572
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0003_denoised",
+          "kind": "denoised",
+          "offset_ms": 597900,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_6eb3f16e558d",
+        "evt_8c81209b998c"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 21170,
+      "order": 2
+    },
+    {
+      "segment_id": "seg_0004",
+      "start_ms": 603900,
+      "end_ms": 605530,
+      "start_clock": "00:10:03.900",
+      "offset_in_clip_ms": 10900,
+      "clipped_by_window": false,
+      "text": "我觉得是十分之一。",
+      "transcript_state": "recognized",
+      "reliability_state": "needs_review",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_04",
+        "source_id": "src_spk_04",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -16.7,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0004",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.674
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0004_denoised",
+          "kind": "denoised",
+          "offset_ms": 603900,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_727c7b18232a",
+        "evt_f284d0586646"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 17470,
+      "order": 3
+    },
+    {
+      "segment_id": "seg_0005",
+      "start_ms": 608900,
+      "end_ms": 611390,
+      "start_clock": "00:10:08.900",
+      "offset_in_clip_ms": 15900,
+      "clipped_by_window": false,
+      "text": "那它没有平均分。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_05",
+        "source_id": "src_spk_05",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -17.9,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0005",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.56
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0005_denoised",
+          "kind": "denoised",
+          "offset_ms": 608900,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_4d0ec4817805",
+        "evt_27572c4a3951"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 11610,
+      "order": 4
+    },
+    {
+      "segment_id": "seg_0006",
+      "start_ms": 615430,
+      "end_ms": 617260,
+      "start_clock": "00:10:15.430",
+      "offset_in_clip_ms": 22430,
+      "clipped_by_window": false,
+      "text": "你连这个都不会。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_06",
+        "source_id": "src_spk_06",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -13.4,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0006",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.527
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0006_denoised",
+          "kind": "denoised",
+          "offset_ms": 615430,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_f2b5360b0670",
+        "evt_ab2c7dea9b5c"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 5740,
+      "order": 5
+    },
+    {
+      "segment_id": "seg_0007",
+      "start_ms": 620260,
+      "end_ms": 622460,
+      "start_clock": "00:10:20.260",
+      "offset_in_clip_ms": 27260,
+      "clipped_by_window": false,
+      "text": null,
+      "transcript_state": "unrecognized",
+      "reliability_state": "undetermined",
+      "status": "no_speech_recognized",
+      "revision": 1,
+      "speaker": {
+        "label": "spk_07",
+        "source_id": "src_spk_07",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -29.1,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0007",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.765
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0007_denoised",
+          "kind": "denoised",
+          "offset_ms": 620260,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_ea0037b1f0be",
+        "evt_d5d1ab639eb6"
+      ],
+      "relation": "before",
+      "distance_to_anchor_ms": 540,
+      "order": 6
+    },
+    {
+      "segment_id": "seg_0008",
+      "start_ms": 626900,
+      "end_ms": 630990,
+      "start_clock": "00:10:26.900",
+      "offset_in_clip_ms": 33900,
+      "clipped_by_window": false,
+      "text": "大家先安静，我们一起再看一遍。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_02",
+        "source_id": "src_spk_02",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -1.7,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0008",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.904
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0008_denoised",
+          "kind": "denoised",
+          "offset_ms": 626900,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_c75b45988380",
+        "evt_7defd0779ed3"
+      ],
+      "relation": "after",
+      "distance_to_anchor_ms": 3900,
+      "order": 7
+    },
+    {
+      "segment_id": "seg_0009",
+      "start_ms": 655160,
+      "end_ms": 658990,
+      "start_clock": "00:10:55.160",
+      "offset_in_clip_ms": 62160,
+      "clipped_by_window": false,
+      "text": "四块要一样大，才是四分之一。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_02",
+        "source_id": "src_spk_02",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": 0.0,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0009",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.904
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0009_denoised",
+          "kind": "denoised",
+          "offset_ms": 655160,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_6a7f4f16a98d",
+        "evt_ab6d0b4318b4"
+      ],
+      "relation": "after",
+      "distance_to_anchor_ms": 32160,
+      "order": 8
+    },
+    {
+      "segment_id": "seg_0010",
+      "start_ms": 667900,
+      "end_ms": 670030,
+      "start_clock": "00:11:07.900",
+      "offset_in_clip_ms": 74900,
+      "clipped_by_window": false,
+      "text": "老师，我明白了。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_07",
+        "source_id": "src_spk_07",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": -27.5,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0010",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.877
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0010_denoised",
+          "kind": "denoised",
+          "offset_ms": 667900,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_21402cfb6375",
+        "evt_6b9235d88028"
+      ],
+      "relation": "after",
+      "distance_to_anchor_ms": 44900,
+      "order": 9
+    },
+    {
+      "segment_id": "seg_0011",
+      "start_ms": 680960,
+      "end_ms": 684130,
+      "start_clock": "00:11:20.960",
+      "offset_in_clip_ms": 87960,
+      "clipped_by_window": true,
+      "text": "很好，下面我们做练习，先看第一题。",
+      "transcript_state": "recognized",
+      "reliability_state": "usable",
+      "status": null,
+      "revision": 1,
+      "speaker": {
+        "label": "spk_01",
+        "source_id": "src_spk_01",
+        "reliability_state": "needs_review",
+        "rebind_hint": false
+      },
+      "azimuth": {
+        "deg": 0.0,
+        "reference": "mic_pair_broadside",
+        "source_id": "src_az_seg_0011",
+        "reliability_state": "usable",
+        "rebind_hint": false,
+        "doa_confidence": 0.904
+      },
+      "overlap": {
+        "present": false,
+        "with": []
+      },
+      "audio_ref": [
+        {
+          "id": "aud_ses_lesson_demo_raw",
+          "kind": "raw",
+          "offset_ms": 0,
+          "note": null
+        },
+        {
+          "id": "aud_ses_lesson_demo_seg_0011_denoised",
+          "kind": "denoised",
+          "offset_ms": 680960,
+          "note": "处理音轨，原音频不被覆盖"
+        }
+      ],
+      "event_ids": [
+        "evt_8a4696cd08f1",
+        "evt_63a7b7bd5c97"
+      ],
+      "relation": "after",
+      "distance_to_anchor_ms": 57960,
+      "order": 10
+    }
+  ],
+  "coverage": [
+    {
+      "from_ms": 593000,
+      "to_ms": 596630,
+      "state": "speech",
+      "segments": [
+        "seg_0002"
+      ]
+    },
+    {
+      "from_ms": 596630,
+      "to_ms": 597900,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 597900,
+      "to_ms": 601830,
+      "state": "speech",
+      "segments": [
+        "seg_0003"
+      ]
+    },
+    {
+      "from_ms": 601830,
+      "to_ms": 603900,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 603900,
+      "to_ms": 605530,
+      "state": "speech",
+      "segments": [
+        "seg_0004"
+      ]
+    },
+    {
+      "from_ms": 605530,
+      "to_ms": 608900,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 608900,
+      "to_ms": 611390,
+      "state": "speech",
+      "segments": [
+        "seg_0005"
+      ]
+    },
+    {
+      "from_ms": 611390,
+      "to_ms": 615430,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 615430,
+      "to_ms": 617260,
+      "state": "speech",
+      "segments": [
+        "seg_0006"
+      ]
+    },
+    {
+      "from_ms": 617260,
+      "to_ms": 620260,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 620260,
+      "to_ms": 622460,
+      "state": "speech",
+      "segments": [
+        "seg_0007"
+      ]
+    },
+    {
+      "from_ms": 622460,
+      "to_ms": 626900,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 626900,
+      "to_ms": 630990,
+      "state": "speech",
+      "segments": [
+        "seg_0008"
+      ]
+    },
+    {
+      "from_ms": 630990,
+      "to_ms": 640000,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 640000,
+      "to_ms": 648000,
+      "state": "gap",
+      "segments": [],
+      "reason": "stream_dropout"
+    },
+    {
+      "from_ms": 648000,
+      "to_ms": 655160,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 655160,
+      "to_ms": 658990,
+      "state": "speech",
+      "segments": [
+        "seg_0009"
+      ]
+    },
+    {
+      "from_ms": 658990,
+      "to_ms": 667900,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 667900,
+      "to_ms": 670030,
+      "state": "speech",
+      "segments": [
+        "seg_0010"
+      ]
+    },
+    {
+      "from_ms": 670030,
+      "to_ms": 680960,
+      "state": "no_speech_detected",
+      "segments": []
+    },
+    {
+      "from_ms": 680960,
+      "to_ms": 683000,
+      "state": "speech",
+      "segments": [
+        "seg_0011"
+      ]
+    }
+  ],
+  "summary": {
+    "utterances": 10,
+    "overlapped": 0,
+    "recognized": 9,
+    "unrecognized": 1,
+    "pending": 0,
+    "needs_review": 2,
+    "speakers": [
+      "spk_01",
+      "spk_02",
+      "spk_03",
+      "spk_04",
+      "spk_05",
+      "spk_06",
+      "spk_07"
+    ],
+    "speech_ms": 27800,
+    "overlap_ms": 0,
+    "no_speech_detected_ms": 54200,
+    "gap_ms": 8000,
+    "not_recorded_ms": 0,
+    "not_processed_yet_ms": 0
+  },
+  "notes": [
+    "语音模块只给出时间范围内录到的内容；时间接近不代表因果，结论需 Agent 标注证据并由教师核验。",
+    "匿名说话人仅会话内有效，不是真实身份；声源方位是线索。"
+  ],
+  "anchor": {
+    "at_ms": 623000,
+    "at_clock": "00:10:23.000",
+    "before_ms": 30000,
+    "after_ms": 60000,
+    "within_recording": true
+  }
+}
