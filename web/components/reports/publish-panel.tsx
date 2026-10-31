@@ -18,6 +18,7 @@ export function PublishPanel({ classroomId, evidence }: { classroomId: string; e
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [editorOpen, setEditorOpen] = useState<boolean | null>(null);
   const [listState, setListState] = useState<"loading" | "ready" | "unknown">("loading");
   const [listSource, setListSource] = useState("");
   const source = JSON.stringify([classroomId, evidence.id, evidence.revision, evidence.status]);
@@ -27,6 +28,8 @@ export function PublishPanel({ classroomId, evidence }: { classroomId: string; e
   const student = evidence.basis.context.student_alias;
   const listReady = listSource === source && listState === "ready";
   const eligible = evidence.status === "confirmed" && student === "student-01" && listReady;
+  const visibleReports = reports.filter((report) => report.evidence_id === evidence.id);
+  const showEditor = editorOpen ?? visibleReports.length === 0;
 
   async function refresh() {
     const token = requests.current.beginList(source);
@@ -123,15 +126,34 @@ export function PublishPanel({ classroomId, evidence }: { classroomId: string; e
   }
 
   return <section className="support-panel parent-publish" aria-label="家长摘要发布">
-    <p className="eyebrow">发布与接收预览</p><h4>家长学习摘要</h4>
-    <p className="panel-intro">教师筛选后的文字与家庭活动，不包含原音频或内部证据说明。</p>
-    {evidence.status !== "confirmed" && <div className="empty-state warning-state"><h4>依据已变化 · 等待重核</h4>
-      <p>须先确认当前学习证据，才能预览并发布新版。</p></div>}
+    <h4>家长学习摘要</h4><p className="basis-label">绑定学生：{student} · 依据证据版本 {evidence.revision}</p>
+    {evidence.status !== "confirmed" && <p className="completion-note">
+      依据已变化或尚未确认，不能预览或发布新版。请先重核学习证据，摘要草稿保留。</p>}
     {student !== "student-01" && <p>当前演示仅为 student-01 配置家长绑定；该学生尚无可接收家长。</p>}
     {error && <p role="alert">{error}</p>}
     <p role="status">{busy ? "正在核对并提交…" : notice}</p>
     {!listReady && <p role="status">发布状态{listState === "loading" ? "正在重新核对" : "尚未确认"}；
       旧记录不作为有效发布证明，暂不能预览或发布新版。</p>}
+    <button disabled={busy || listState === "loading"} onClick={() => {
+      setError(""); void refresh();
+    }}>刷新发布状态</button>
+    {visibleReports.map((report) => <article className="history-card" key={report.id}>
+      <span className={`status-badge status-${listReady ? report.status : "pending"}`}>
+        {listReady ? reportStatus[report.status] : "状态待刷新"}</span>
+      <p className="basis-label">报告版本 {report.revision} · 依据证据版本 {report.evidence_revision}</p>
+      {listReady && report.status !== "published" && <div className="empty-state warning-state">
+        <h4>旧报告正文已停止提供</h4><p>{report.status === "stale"
+          ? "依据已变化，原提问与回复保留。请重核后发布新版。" : "教师已撤回此报告，原提问与回复保留。"}</p></div>}
+      <details className="audit-details"><summary>报告入口与来源记录</summary>
+        <p><a href={`/?parent_report=${encodeURIComponent(report.id)}`}>报告入口（需绑定家长登录）</a></p>
+        <p>报告编号：{report.id}</p></details>
+      {listReady && report.status === "published" && <button className="danger-text" disabled={busy}
+        onClick={() => void revoke(report)}>撤回此报告</button>}
+    </article>)}
+    <details open={showEditor}><summary onClick={(event) => {
+      event.preventDefault(); setEditorOpen(!showEditor);
+    }}>编写新版家长摘要</summary>
+    <p className="panel-intro">仅发送教师筛选后的文字与家庭活动，不包含原音频或内部证据说明。</p>
     <fieldset disabled={busy || !eligible}>
       <legend>接收学生的绑定家长 · {student} · 依据证据版本 {evidence.revision}</legend>
       <label>家长学习摘要<textarea value={summary} maxLength={4000}
@@ -147,21 +169,7 @@ export function PublishPanel({ classroomId, evidence }: { classroomId: string; e
         <button className="primary-button" onClick={() => void publish()}>确认内容并发布给绑定家长</button>
       </div>}
     </fieldset>
-    <button disabled={busy || listState === "loading"} onClick={() => {
-      setError(""); void refresh();
-    }}>刷新发布状态</button>
-    {reports.filter((report) => report.evidence_id === evidence.id).map((report) =>
-      <article className="history-card" key={report.id}>
-      <span className={`status-badge status-${listReady ? report.status : "pending"}`}>
-        {listReady ? reportStatus[report.status] : "状态待刷新"}</span>
-      <p className="basis-label">报告版本 {report.revision} · 依据证据版本 {report.evidence_revision}</p>
-      {listReady && report.status === "stale" && <p>旧报告正文已停止提供，原提问与回复保留。</p>}
-      <details className="audit-details"><summary>报告入口与来源记录</summary>
-        <p><a href={`/?parent_report=${encodeURIComponent(report.id)}`}>报告入口（需绑定家长登录）</a></p>
-        <p>报告编号：{report.id}</p></details>
-      {listReady && report.status === "published" && <button className="danger-text" disabled={busy}
-        onClick={() => void revoke(report)}>撤回此报告</button>}
-    </article>)}
+    </details>
     <p className="privacy-note">撤回后站内旧报告及受控入口停止提供；已下载的离线副本不能远程收回。</p>
     <QuestionQueue classroomId={classroomId}
       reportIds={reports.filter((report) => report.evidence_id === evidence.id).map((report) => report.id)} />
