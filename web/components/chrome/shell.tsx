@@ -16,7 +16,7 @@ const teacherNavigation: NavigationItem[] = [
   { view: "review", label: "核验工作台", icon: "review" },
   { view: "teaching", label: "教学支持", icon: "teaching" },
   { view: "publishing", label: "发布反馈", icon: "publishing" },
-  { view: "care", label: "学生关怀", icon: "parent" },
+  { view: "care", label: "课堂详情", icon: "parent" },
 ];
 
 const roleNavigation: Record<Exclude<User["role"], "teacher">, NavigationItem> = {
@@ -61,7 +61,7 @@ export function Shell({ user, activeView, onNavigate, children, actions }: Shell
           <button type="button" aria-current={activeView === "publishing" ? "page" : undefined}
             onClick={() => onNavigate("publishing")}>发布反馈</button>
           <button type="button" aria-current={activeView === "care" ? "page" : undefined}
-            onClick={() => onNavigate("care")}>学生关怀</button>
+            onClick={() => onNavigate("care")}>课堂详情</button>
         </nav>}
         <div className="header-context">
           <span className="environment-badge">演示环境</span>

@@ -48,7 +48,7 @@ export function TeacherHome(props: Props) {
         {view === "classrooms" && <InputPanel key={selected.id} classroomId={selected.id} />}
       </details>}
     </section>
-    <section hidden={view !== "care"} aria-label="学生关怀工作区">
+    <section hidden={view !== "care"} aria-label="课堂详情工作区">
       {selected ? <CarePanel key={selected.id} classroom={selected} active={view === "care"} />
         : <div className="empty-state"><h1>先选择一堂课</h1><p>选择课堂名单，查看学生观察与跟进。</p>
           <button onClick={() => props.onView("classrooms")}>返回课堂库</button></div>}
