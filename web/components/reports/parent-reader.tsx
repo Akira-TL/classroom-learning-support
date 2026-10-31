@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { questionStatus, reportsApi, reportStatus } from "../../lib/reports";
 import type { ParentQuestion, ParentReport } from "../../lib/reports";
+import "../presentation/role-panels.css";
 
 export function ParentReader() {
   const [reports, setReports] = useState<ParentReport[]>([]);
@@ -94,39 +95,47 @@ export function ParentReader() {
     }
   }
 
-  return <section aria-label="家长学习反馈">
-    <h2>家长学习反馈</h2>
-    <p>演示账号仅绑定 student-01；只显示教师向该学生家长发布的内容，不提供课堂原音频。</p>
-    <button disabled={loading || busy} onClick={() => void refresh()}>刷新报告及有效状态</button>
+  return <section className="role-panel parent-reader" aria-label="家长学习反馈">
+    <header className="panel-heading"><div><p className="eyebrow">家长端 · 模拟资料</p>
+      <h2>孩子的学习反馈</h2></div>
+      <button className="quiet-button" disabled={loading || busy} onClick={() => void refresh()}>刷新报告状态</button>
+    </header><p className="panel-intro">教师筛选后的学习摘要与家庭活动，仅向绑定家长提供。</p>
     {loading && <p role="status">正在核对报告状态…</p>}
     {error && <p role="alert">{error}</p>}
     {notice && <p role="status">{notice}</p>}
-    {!loading && reports.length === 0 && <p>尚无绑定学生的已发布报告；请等待教师发布。</p>}
-    <ul>{reports.map((report) => <li key={report.id}>
-      <button disabled={busy} onClick={() => setSelectedId(report.id)}>{report.student_id}：{reportStatus[report.status]}
-        （报告版本 {report.revision}）</button>
-    </li>)}</ul>
-    {selected && <article>
-      <h3>学生 {selected.student_id} 的反馈</h3>
-      <p>{reportStatus[selected.status]} · {new Date(selected.published_at).toLocaleString("zh-CN")}</p>
+    {!loading && reports.length === 0 && <div className="empty-state">尚无绑定学生的已发布报告，请等待教师发布。</div>}
+    <nav className="report-picker" aria-label="选择家长报告">{reports.map((report, index) =>
+      <button key={report.id} aria-pressed={selectedId === report.id} disabled={busy}
+        onClick={() => setSelectedId(report.id)}>学习报告 {index + 1}
+        <span className={`status-badge status-${report.status}`}>{reportStatus[report.status]}</span>
+        <small>版本 {report.revision}</small></button>)}</nav>
+    {selected && <article className="reading-card">
+      <p className="muted">{new Date(selected.published_at).toLocaleString("zh-CN")}</p>
       {selected.status === "published" ? <>
-        <h4>学习摘要</h4><p>{selected.summary}</p>
-        <h4>家庭活动</h4><p>{selected.home_activity}</p>
+        <div className="feedback-highlight"><span className="status-badge status-published">教师已发布</span>
+          <h3>学习摘要</h3><p>{selected.summary}</p></div>
+        <section className="home-activity"><h3>家庭活动</h3><p>{selected.home_activity}</p></section>
         <label>向教师提问<textarea value={text} maxLength={3000} disabled={busy}
+          placeholder="写下希望进一步了解的问题…"
           onChange={(event) => {
             const value = event.target.value;
             setDrafts((previous) => ({ ...previous, [selectedId]: value })); questionKey.current = null;
           }} /></label>
-        <button disabled={busy || !text.trim()} onClick={() => void submit()}>提交疑问</button>
-      </> : <p>此报告正文已停止提供，请等待教师发布新版；仍可查看此前疑问的处理结果。</p>}
-      <h4>此前疑问及教师回复</h4>
-      <button disabled={busy} onClick={() => void refreshQuestions()}>刷新教师回复</button>
+        <button className="primary-button" disabled={busy || !text.trim()} onClick={() => void submit()}>提交疑问</button>
+      </> : <div className="empty-state warning-state"><h3>旧报告正文已停止提供</h3>
+        <p>请等待教师发布新版，仍可查看此前疑问的处理结果。</p></div>}
+      <header className="panel-heading"><h3>教师回复</h3>
+        <button className="quiet-button" disabled={busy} onClick={() => void refreshQuestions()}>刷新回复</button></header>
       {questions.length === 0 && <p>暂无疑问。</p>}
-      {questions.map((question) => <article key={question.id}>
-        <p>{question.text} · {questionStatus[question.status]}</p>
-        {question.response && <p>教师回复：{question.response}</p>}
+      {questions.map((question) => <article className="history-card" key={question.id}>
+        <span className={`status-badge status-${question.status}`}>{questionStatus[question.status]}</span>
+        <p>{question.text}</p>
+        {question.response && <p className="teacher-response">教师回复：{question.response}</p>}
       </article>)}
+      <details className="audit-details"><summary>报告版本与绑定信息</summary>
+        <p>报告编号：{selected.id}，版本 {selected.revision}</p>
+        <p>当前演示绑定：{selected.student_id}；此入口不提供课堂原音频。</p></details>
     </article>}
-    <p>站内撤回会停止旧报告读取；已保存到个人设备的离线副本不能远程收回，请核对当前状态。</p>
+    <p className="privacy-note">站内撤回会停止旧报告读取；已保存到个人设备的离线副本不能远程收回，请核对当前状态。</p>
   </section>;
 }
