@@ -45,7 +45,7 @@ export function TeacherHome(props: Props) {
       {props.formOpen && <div className="surface-card classroom-editor"><ClassroomForm key={props.formKey}
         classroom={selected} busy={busy} onSave={props.onSave} onCancel={props.onCancel} /></div>}
       {selected && <details className="surface-card classroom-tools"><summary>音频输入与归档 · {selected.title}</summary>
-        <p>文件和麦克风目前用于本机采集诊断，真实语音服务尚待联调。离开课堂管理会停止本机输入。</p>
+        <p>文件和麦克风会送往本机语音服务；设备与重叠分离效果仍需实测。离开课堂管理会停止本机输入。</p>
         {view === "classrooms" && <InputPanel key={selected.id} classroomId={selected.id} />}
       </details>}
     </section>

@@ -99,7 +99,7 @@ export default function Home() {
   return <Shell user={user} activeView={user?.role === "teacher" ? view : user?.role ?? "classrooms"}
     onNavigate={navigateView} actions={user && <>
       {user.role === "teacher" && selected && <>
-        <span className="badge badge-warning">真实语音服务尚待联调</span>
+        <span className="badge badge-warning">语音接入待完整验收</span>
         <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
       </>}
       <button disabled={busy} className="header-session" onClick={() => void perform(async () => {
