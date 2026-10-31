@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { taskNames } from "../../lib/evidence";
 import type { EvidenceRecord } from "../../lib/evidence";
 import { mergePlans, plansApi } from "../../lib/plans";
@@ -27,6 +27,9 @@ export function PlanPanel({ classroomId, evidence, view = "teaching" }: {
   const loaded = read.context === context && read.status === "ready";
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [generationOpen, setGenerationOpen] = useState<boolean | null>(null);
+  const generationId = useId();
+  const showGeneration = generationOpen ?? results.length === 0;
 
   function accept(incoming: PlanResult[]) {
     const matched = incoming.filter((item) => item.task.request.evidence_id === evidence.id);
@@ -84,8 +87,11 @@ export function PlanPanel({ classroomId, evidence, view = "teaching" }: {
 
   const disabled = busy || loading || !loaded || evidence.status !== "confirmed";
   return <section className="support-panel plans-panel" aria-label="教学安排与报告导出">
-    <div hidden={view !== "teaching"}>
-    <p className="eyebrow">已确认证据 → 教学支持</p><h3>提问与下一课安排</h3>
+    <header className="support-toolbar"><h3>{view === "teaching" ? "提问与下一课安排" : "教师报告与导出"}</h3>
+      <div><button disabled={loading || busy} aria-label="刷新教学安排与任务" onClick={() => void refresh()}>刷新</button>
+        <button hidden={view !== "teaching"} aria-expanded={showGeneration} aria-controls={generationId}
+          onClick={() => setGenerationOpen(!showGeneration)}>生成与重试</button></div></header>
+    <div id={generationId} className="generation-tools" hidden={view !== "teaching" || !showGeneration}>
     <p className="panel-intro">模型初填提问、活动及检查方法；准备方式、备选安排和保留内容由教师补充。</p>
     {evidence.status !== "confirmed" && <p>须先确认有效学习证据，才能生成教学安排。</p>}
     <button className="primary-button" disabled={disabled} onClick={() => void generate(false)}>
@@ -95,16 +101,16 @@ export function PlanPanel({ classroomId, evidence, view = "teaching" }: {
     {attempt && <p>本次请求依据证据版本 {attempt.expected_evidence_revision}。
       {attempt.expected_evidence_revision !== evidence.revision && "证据已变化；只有明确重新生成才使用新版本。"}</p>}
     </div>
-    {view === "publishing" && <h3>教师报告与导出</h3>}
+    {attempt && attempt.expected_evidence_revision !== evidence.revision && <p className="completion-note">
+      原请求仍对应证据版本 {attempt.expected_evidence_revision}；如需当前版本，请展开“生成与重试”明确重新生成。</p>}
     {error && <p role="alert">{error} 列表未核实成功时旧安排仅供查看，不能创建报告；原请求保留。</p>}
     <p role="status" aria-live="polite">{loading ? "正在核实当前安排与任务…"
       : busy ? "正在请求教学安排，尚未确认成功…" : notice}</p>
-    <button disabled={loading || busy} onClick={() => void refresh()}>
-      {loading ? "正在读取…" : "刷新教学安排与任务"}</button>
     {(!loaded || evidence.status !== "confirmed") && <p className="completion-note">
       当前来源或列表尚未核实，安排只读，创建教师报告暂不可用。</p>}
     {loaded && results.length === 0 && <p>此证据尚无教学安排任务，请先到教学支持生成。</p>}
-    {results.length > 0 && <label>选择教学安排任务<select value={selectedTask}
+    {results.length > 0 && <label className="task-selector"><span>当前安排</span>
+      <select aria-label="选择教学安排任务" value={selectedTask}
       onChange={(event) => setSelectedTask(event.target.value)}>
       {results.map((result, index) => <option key={result.task.id} value={result.task.id}>
         安排任务 {index + 1} · {result.task.id.slice(-6)} · {taskNames[result.task.status]}
@@ -112,9 +118,8 @@ export function PlanPanel({ classroomId, evidence, view = "teaching" }: {
     </select></label>}
     {results.map((result, index) => <article className="task-card" key={result.task.id}
       hidden={result.task.id !== selectedTask} aria-label={`安排任务 ${index + 1} · ${result.task.id.slice(-6)}`}>
-      <p><span className={`status-badge status-${result.task.status}`}>{taskNames[result.task.status]}</span>
-        <span className="basis-label">依据证据版本 {result.task.basis.revision}</span></p>
-      <details className="audit-details"><summary>生成任务记录</summary><p>任务编号：{result.task.id}</p></details>
+      {result.task.status !== "succeeded" && <p className="task-state" role="status">
+        <span className={`status-badge status-${result.task.status}`}>{taskNames[result.task.status]}</span></p>}
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <p>过期返回已丢弃，仅留审计记录，未采用为有效教学安排。</p>}
       {result.plan ? <>
@@ -129,6 +134,8 @@ export function PlanPanel({ classroomId, evidence, view = "teaching" }: {
         </div>
       </>
         : <p>此任务没有可供教师核验的教学安排。</p>}
+      <details className="audit-details"><summary>生成任务记录</summary><p>任务编号：{result.task.id}</p>
+        <p>{taskNames[result.task.status]} · 依据证据版本 {result.task.basis.revision}</p></details>
     </article>)}
   </section>;
 }

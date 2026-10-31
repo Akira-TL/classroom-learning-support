@@ -48,26 +48,16 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
   }
 
   return <section className="exercise-review" aria-label="分层练习核验">
-    <header className="panel-heading"><h4>练习内容</h4><div className="badge-group">
+    <header className="review-meta"><div className="badge-group">
       <span className={`status-badge status-${record.status}`}>{evidenceNames[record.status]}</span>
-      <span className="status-badge">{record.adopted ? "已采用" : "未采用"}</span></div></header>
-    <p className="basis-label">依据证据版本 {record.evidence_revision} · 练习版本 {record.revision}</p>
-    <details className="audit-details"><summary>查看依据与核验记录</summary>
-    <p>依据证据 {record.evidence_id}，版本 {record.evidence_revision}；
-      练习版本 {record.revision}，当前编辑依据版本 {revision}；编辑或核验人 {record.reviewed_by ?? "尚无记录"}。</p>
-    </details>
-    <details className="audit-details"><summary>查看原始模型初稿</summary>
-      <p>模型：{record.original.model}。原稿独立保留，不随教师编辑覆盖。</p>
-      {record.original.content.exercises.map((item) => <div key={item.level}><h5>{levelNames[item.level]}</h5>
-        <p>{item.question}</p><p>答案：{item.answer}</p><p>解释：{item.explanation}</p></div>)}
-    </details>
-    <p className="panel-intro">请逐题检查题干、图形需求、答案与解释，模型输出仍需教师核验。</p>
+      <span className="status-badge">{record.adopted ? "已采用" : "未采用"}</span></div>
+      <span className="basis-label">证据版本 {record.evidence_revision} · 练习版本 {record.revision}</span></header>
     {error && <p role="alert">{error} 发生版本冲突时请刷新并检查后手动载入，不自动覆盖。</p>}
     {revision !== record.revision && <p role="alert">记录已更新，当前编辑保留；请刷新后决定是否载入最新内容。</p>}
     {stale && <p>依据过期，练习不能继续确认或采用。请重核证据后明确重新生成。</p>}
     <p role="status">{notice}</p>
-    <fieldset disabled={busy || stale}>
-      <legend>逐题编辑与核对</legend>
+    <fieldset className="review-fields" disabled={busy || stale}>
+      <legend className="sr-only">逐题编辑与核对，模型初稿须教师逐题核验</legend>
       <div className="level-switch" role="group" aria-label="选择练习层次">
         {items.map((item) => <button key={item.level} aria-pressed={activeLevel === item.level}
           onClick={() => setActiveLevel(item.level)}>{levelNames[item.level]}{checked.includes(item.level) ? " ✓" : ""}
@@ -105,5 +95,14 @@ export function ExerciseReview({ classroomId, record, onSaved }: {
         setNotice("已载入当前记录，未保存的编辑已重置。");
       }}>载入最新练习并重置编辑</button>
     </fieldset>
+    <details className="audit-details"><summary>查看原始模型初稿</summary>
+      <p>模型：{record.original.model}。原稿独立保留，不随教师编辑覆盖。</p>
+      {record.original.content.exercises.map((item) => <div key={item.level}><h5>{levelNames[item.level]}</h5>
+        <p>{item.question}</p><p>答案：{item.answer}</p><p>解释：{item.explanation}</p></div>)}
+    </details>
+    <details className="audit-details"><summary>查看依据与核验记录</summary>
+      <p>依据证据 {record.evidence_id}，版本 {record.evidence_revision}；
+        练习版本 {record.revision}，当前编辑依据版本 {revision}；核验人 {record.reviewed_by ?? "尚无记录"}。</p>
+    </details>
   </section>;
 }

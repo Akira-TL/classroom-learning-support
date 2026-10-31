@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { taskNames } from "../../lib/evidence";
 import type { EvidenceRecord } from "../../lib/evidence";
 import { exercisesApi, mergeExercises } from "../../lib/exercises";
@@ -27,6 +27,9 @@ export function ExercisePanel({ classroomId, evidence, view = "teaching" }: {
   const loaded = read.context === context && read.status === "ready";
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [generationOpen, setGenerationOpen] = useState<boolean | null>(null);
+  const generationId = useId();
+  const showGeneration = generationOpen ?? results.length === 0;
 
   function accept(incoming: ExerciseResult[]) {
     const matched = incoming.filter((item) => item.task.request.evidence_id === evidence.id);
@@ -87,8 +90,11 @@ export function ExercisePanel({ classroomId, evidence, view = "teaching" }: {
 
   const disabled = busy || loading || !loaded || evidence.status !== "confirmed";
   return <section className="support-panel exercises-panel" aria-label="分层练习与学生发布">
-    <div hidden={view !== "teaching"}>
-    <p className="eyebrow">已确认证据 → 教学支持</p><h3>分层练习</h3>
+    <header className="support-toolbar"><h3>{view === "teaching" ? "分层练习" : "学生反馈发布"}</h3>
+      <div><button disabled={loading || busy} aria-label="刷新练习与任务" onClick={() => void refresh()}>刷新</button>
+        <button hidden={view !== "teaching"} aria-expanded={showGeneration} aria-controls={generationId}
+          onClick={() => setGenerationOpen(!showGeneration)}>生成与重试</button></div></header>
+    <div id={generationId} className="generation-tools" hidden={view !== "teaching" || !showGeneration}>
     <p className="panel-intro">按需调用 DeepSeek 生成三层练习，逐题核对后再确认、采用。</p>
     {evidence.status !== "confirmed" && <p>请先确认有效学习证据；未确认、驳回或过期证据不能生成练习。</p>}
     <button className="primary-button" disabled={disabled} onClick={() => void generate(false)}>
@@ -98,16 +104,16 @@ export function ExercisePanel({ classroomId, evidence, view = "teaching" }: {
     {attempt && <p>当前请求依据证据版本 {attempt.expected_evidence_revision}。
       {attempt.expected_evidence_revision !== evidence.revision && "证据已更新；需明确重新生成才使用新版本。"}</p>}
     </div>
-    {view === "publishing" && <h3>学生反馈发布</h3>}
+    {attempt && attempt.expected_evidence_revision !== evidence.revision && <p className="completion-note">
+      原请求仍对应证据版本 {attempt.expected_evidence_revision}；如需当前版本，请展开“生成与重试”明确重新生成。</p>}
     {error && <p role="alert">{error} 列表未核实成功时旧记录仅供查看，不能发布；同请求重试保留原编号。</p>}
     <p role="status" aria-live="polite">{loading ? "正在核实当前练习与任务…"
       : busy ? "正在请求练习，尚未确认成功…" : notice}</p>
-    <button disabled={loading || busy} onClick={() => void refresh()}>
-      {loading ? "正在读取…" : "刷新练习与任务"}</button>
     {(!loaded || evidence.status !== "confirmed") && <p className="completion-note">
       当前来源或列表尚未核实，练习只读，发布预览与确认暂不可用。</p>}
     {loaded && results.length === 0 && <p>此证据尚无练习任务，请先到教学支持生成。</p>}
-    {results.length > 0 && <label>选择练习任务<select value={selectedTask}
+    {results.length > 0 && <label className="task-selector"><span>当前练习</span><select aria-label="选择练习任务"
+      value={selectedTask}
       onChange={(event) => setSelectedTask(event.target.value)}>
       {results.map((result, index) => <option key={result.task.id} value={result.task.id}>
         练习任务 {index + 1} · {result.task.id.slice(-6)} · {taskNames[result.task.status]}
@@ -115,9 +121,8 @@ export function ExercisePanel({ classroomId, evidence, view = "teaching" }: {
     </select></label>}
     {results.map((result, index) => <article className="task-card" key={result.task.id}
       hidden={result.task.id !== selectedTask} aria-label={`练习任务 ${index + 1} · ${result.task.id.slice(-6)}`}>
-      <p><span className={`status-badge status-${result.task.status}`}>{taskNames[result.task.status]}</span>
-        <span className="basis-label">依据证据版本 {result.task.basis.revision}</span></p>
-      <details className="audit-details"><summary>生成任务记录</summary><p>任务编号：{result.task.id}</p></details>
+      {result.task.status !== "succeeded" && <p className="task-state" role="status">
+        <span className={`status-badge status-${result.task.status}`}>{taskNames[result.task.status]}</span></p>}
       {result.task.error && <p role="alert">{result.task.error}</p>}
       {result.task.discarded_draft && <p>旧返回已丢弃，仅留审计记录，未作为有效练习采用。</p>}
       {result.exercise_set ? <>
@@ -131,6 +136,8 @@ export function ExercisePanel({ classroomId, evidence, view = "teaching" }: {
         )} />
         </div>
       </> : <p>此任务没有可供核验的练习。</p>}
+      <details className="audit-details"><summary>生成任务记录</summary><p>任务编号：{result.task.id}</p>
+        <p>{taskNames[result.task.status]} · 依据证据版本 {result.task.basis.revision}</p></details>
     </article>)}
   </section>;
 }

@@ -48,28 +48,18 @@ export function PlanReview({ classroomId, record, onSaved }: {
   }
 
   return <section className="plan-review" aria-label="提问与下一课安排核验">
-    <header className="panel-heading"><h4>教学安排</h4><div className="badge-group">
+    <header className="review-meta"><div className="badge-group">
       <span className={`status-badge status-${record.status}`}>{evidenceNames[record.status]}</span>
-      <span className="status-badge">{record.adopted ? "已采用" : "未采用"}</span></div></header>
-    <p className="basis-label">依据证据版本 {record.evidence_revision} · 安排版本 {record.revision}</p>
+      <span className="status-badge">{record.adopted ? "已采用" : "未采用"}</span></div>
+      <span className="basis-label">证据版本 {record.evidence_revision} · 安排版本 {record.revision}</span></header>
     <div className="readonly-target"><span>教学对象</span><strong>{record.content.target_student}</strong>
       <small>来自已确认证据，不可在此更改</small></div>
-    <details className="audit-details"><summary>查看依据与核验记录</summary>
-    <p>依据证据 {record.evidence_id}，版本 {record.evidence_revision}；安排版本 {record.revision}；
-      本次编辑依据版本 {revision}；核验人 {record.reviewed_by ?? "未核验"}。</p>
-    </details>
-    <details><summary>原始模型返回（保留，不随教师编辑覆盖）</summary>
-      <p>模型：{record.original.model}</p>
-      <p>课堂提问：{record.original.content.classroom_question}</p>
-      <p>下一课调整：{record.original.content.next_lesson}</p>
-      <p>检查方法：{record.original.content.check_method}</p>
-    </details>
     {error && <p role="alert">{error} 版本冲突不会自动重试，请刷新后检查并手动载入。</p>}
     {changed && <p role="alert">记录已有新版本，当前编辑保留，请检查后再决定载入。</p>}
     {stale && <p>依据已失效，此安排不能继续确认或采用，需重核证据后明确重新生成。</p>}
     <p role="status">{notice}</p>
-    <fieldset disabled={busy || stale}>
-      <legend>教师编辑教学安排</legend>
+    <fieldset className="review-fields" disabled={busy || stale}>
+      <legend className="sr-only">教师编辑教学安排</legend>
       {fields.map((field) => <label key={field.key} className={!content[field.key].trim() ? "incomplete-field" : ""}>
         {field.label}{!content[field.key].trim() && <span className="status-badge status-pending">待教师补充</span>}
         <textarea maxLength={field.max} value={content[field.key]}
@@ -96,6 +86,16 @@ export function PlanReview({ classroomId, record, onSaved }: {
         setNotice("已载入页面当前记录，未保存的教学安排编辑已重置，检查结果草稿保留。");
       }}>载入最新安排并重置编辑</button>
     </fieldset>
+    <details className="audit-details"><summary>查看原始模型初稿</summary>
+      <p>模型：{record.original.model}。原稿独立保留，不随教师编辑覆盖。</p>
+      <p>课堂提问：{record.original.content.classroom_question}</p>
+      <p>下一课调整：{record.original.content.next_lesson}</p>
+      <p>检查方法：{record.original.content.check_method}</p>
+    </details>
+    <details className="audit-details"><summary>查看依据与核验记录</summary>
+      <p>依据证据 {record.evidence_id}，版本 {record.evidence_revision}；安排版本 {record.revision}；
+        本次编辑依据版本 {revision}；核验人 {record.reviewed_by ?? "未核验"}。</p>
+    </details>
     <h4>后续检查记录</h4>
     {record.observations.length === 0 && <p>尚无检查结果。</p>}
     <ul>{record.observations.map((item, index) => <li key={`${item.revision}/${index}`}>

@@ -146,3 +146,33 @@ span.basis-label { margin-left: 10px; }
   .role-panel > .primary-button, .reading-card > .primary-button { width: 100%; }
   .summary-metrics { gap: 10px; }
 }
+
+/* 教学主区紧凑布局：外层工作区提供卡片，内层专注输入与核验。 */
+.support-panel.exercises-panel, .support-panel.plans-panel {
+  border: 0; border-radius: 0; box-shadow: none; padding: 0; margin: 0; background: transparent;
+}
+.support-panel .support-toolbar { display: flex; justify-content: space-between; align-items: center;
+  gap: 12px; flex-wrap: wrap; padding-bottom: 10px; border-bottom: 1px solid var(--panel-border); }
+.support-panel .support-toolbar h3 { margin: 0; font-size: 17px; }
+.support-toolbar > div { display: flex; gap: 6px; }
+.support-panel .support-toolbar button { min-height: 32px; margin: 0; padding: 5px 9px; font-size: 12px; }
+.support-panel .generation-tools { padding: 12px; background: #f6f9fe; border-radius: 8px; margin: 10px 0; }
+.support-panel .generation-tools p { font-size: 12px; margin: 6px 0 10px; }
+.support-panel .task-selector { display: flex; align-items: center; gap: 10px; margin: 10px 0; }
+.task-selector > span { flex: 0 0 auto; font-size: 12px; color: var(--panel-muted); }
+.support-panel .task-selector select { min-width: 0; margin: 0; min-height: 34px; padding: 6px 9px; font-size: 12px; }
+.support-panel .task-card { border-top: 0; padding-top: 0; margin-top: 0; }
+.support-panel .review-meta { display: flex; justify-content: space-between; align-items: center;
+  gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.review-meta .basis-label { margin: 0; font-size: 11px; }
+.support-panel .review-fields { margin: 8px 0 16px; border: 0; padding: 0; }
+.support-panel .review-fields > label { margin: 10px 0; }
+.support-panel .review-fields .level-switch { margin: 10px 0; }
+.support-panel .review-fields .level-switch button { min-height: 36px; padding: 7px 8px; font-size: 13px; }
+.support-panel .review-fields .exercise-editor { margin: 14px 0; padding: 12px; }
+.support-panel .review-fields .exercise-editor label { margin: 10px 0; }
+.support-panel .review-fields textarea { min-height: 80px; padding: 9px 11px; font-size: 15px; }
+.support-panel .plan-review .readonly-target { padding: 8px 11px; margin: 10px 0; gap: 8px; }
+.support-panel .plan-review .readonly-target small { font-size: 11px; }
+.support-panel .exercise-review > [role="status"]:empty,
+.support-panel .plan-review > [role="status"]:empty { display: none; }
