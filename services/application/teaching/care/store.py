@@ -5,7 +5,7 @@ from pydantic import ValidationError
 
 from ..audio.models import Utterance
 from ..classroom.storage import SQLiteStore, StoreError
-from .models import AcousticMeasurements, CareReport, Observation, ObservationInput
+from .models import AcousticMeasurements, Observation, ObservationInput
 
 
 def require_source(db: sqlite3.Connection, store: SQLiteStore, cid: str, teacher: str,
@@ -16,10 +16,9 @@ def require_source(db: sqlite3.Connection, store: SQLiteStore, cid: str, teacher
     if not row:
         raise StoreError(409, "来源发言不存在或已删除")
     source = Utterance.model_validate_json(row[0])
-    if (source.version != payload.expected_utterance_version or source.phase in {"partial", "withdraw"}
-            or source.identity_review != "confirmed" or source.text_review != "confirmed"
-            or source.student_alias != payload.student_id or payload.student_id not in classroom.students):
-        raise StoreError(409, "发言版本或学生归属尚未核验，请重新核验来源")
+    if (source.version != payload.expected_utterance_version or source.phase == "withdraw"
+            or payload.student_id not in classroom.students):
+        raise StoreError(409, "来源版本已变化或学生不属于课堂")
     if classroom.date != payload.observed_on:
         raise StoreError(422, "观察日期须与来源课堂日期一致")
     return source
@@ -50,8 +49,6 @@ class CareStore:
         with store.connection() as db:
             db.executescript("""
                 CREATE TABLE IF NOT EXISTS care_observations
-                (id TEXT PRIMARY KEY, classroom_id TEXT NOT NULL, teacher_id TEXT NOT NULL, body TEXT NOT NULL);
-                CREATE TABLE IF NOT EXISTS care_reports
                 (id TEXT PRIMARY KEY, classroom_id TEXT NOT NULL, teacher_id TEXT NOT NULL, body TEXT NOT NULL);
             """)
 
@@ -94,15 +91,3 @@ class CareStore:
                        (record.id, cid, teacher, record.model_dump_json()))
             return record
 
-    @staticmethod
-    def report(db: sqlite3.Connection, cid: str, teacher: str, rid: str) -> CareReport:
-        row = db.execute("SELECT body FROM care_reports WHERE id=? AND classroom_id=? AND teacher_id=?",
-                         (rid, cid, teacher)).fetchone()
-        if not row:
-            raise StoreError(404, "关怀记录不存在")
-        return CareReport.model_validate_json(row[0])
-
-    @staticmethod
-    def write_report(db: sqlite3.Connection, report: CareReport) -> None:
-        db.execute("INSERT OR REPLACE INTO care_reports VALUES (?,?,?,?)",
-                   (report.id, report.classroom_id, report.teacher_id, report.model_dump_json()))

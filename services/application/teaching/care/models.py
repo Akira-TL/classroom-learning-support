@@ -79,39 +79,3 @@ class Comparison(StrictModel):
     notes: list[str]
 
 
-class Basis(StrictModel):
-    observation_id: str
-    revision: int = Field(ge=1)
-
-
-class ReportInput(StrictModel):
-    comparison: CompareRequest
-    basis: list[Basis] = Field(min_length=1, max_length=100)
-    teacher_text: str = Field(min_length=1, max_length=5000)
-    student_text: str = Field(min_length=1, max_length=5000)
-    parent_text: str = Field(min_length=1, max_length=5000)
-    followup: str = Field(min_length=1, max_length=3000)
-
-
-class CareReport(ReportInput):
-    id: str
-    classroom_id: str
-    teacher_id: str
-    student_id: str
-    revision: int = 1
-    status: Literal["draft", "published", "revoked", "stale"] = "draft"
-
-
-class ReportAction(StrictModel):
-    expected_revision: int = Field(ge=1)
-    action: Literal["publish", "revoke"]
-    teacher_confirmed: Literal[True]
-
-
-class RecipientReport(StrictModel):
-    id: str
-    revision: int
-    student_id: str
-    audience: Literal["student", "parent"]
-    text: str
-    status: Literal["published"] = "published"

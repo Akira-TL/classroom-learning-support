@@ -8,13 +8,13 @@ from .store import CareStore
 
 def compare(db: sqlite3.Connection, store: CareStore, teacher: str, request: CompareRequest) -> Comparison:
     records = [item for item in store.list_observations(db, teacher)
-               if item.student_id == request.student_id and item.confirmed and item.source_current]
+               if item.student_id == request.student_id and item.source_current]
     baseline = [item for item in records if request.baseline_start <= item.observed_on <= request.baseline_end]
     recent = [item for item in records if request.current_start <= item.observed_on <= request.current_end]
     conditions = {item.capture_conditions for item in baseline + recent}
     notes: list[str] = []
     if len(baseline) < 3 or len(recent) < 3:
-        notes.append("至少一个时间段少于3条已核验观察，样本不足以描述稳定变化；保留逐条事实供教师了解")
+        notes.append("至少一个时间段少于3条观察，样本不足以描述稳定变化；保留逐条记录及来源供了解")
     if len(conditions) > 1:
         notes.append("采集条件不同，数值不作直接差值解释；请先核对设备、距离、环境和任务")
     metrics = [metric("pitch_hz", "Hz", baseline, recent, len(conditions) == 1),
