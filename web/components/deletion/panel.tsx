@@ -7,6 +7,7 @@ import { createAttempt, rememberAttempt, rememberTask } from "../../lib/deletion
 import type { DeletionAttempt } from "../../lib/deletion/attempts";
 import type { Classroom } from "../../lib/types";
 import { DeletionAttempts } from "./attempts";
+import "../presentation/role-panels.css";
 
 const localNames: Record<DeletionView["local_status"], string> = {
   pending: "待清理本机文件", complete: "本机清理完成", failed: "部分本机文件清理失败",
@@ -109,12 +110,15 @@ export function DeletionPanel({ classroom, onRemoved }: {
       if (current(version)) setError(cause instanceof Error ? cause.message : "删除任务读取失败");
     } finally { end(version); }
   }
-  return <section aria-label="课堂删除与资源清除">
-    <h2>课堂删除与资源清除</h2>
-    <p>删除会关闭本项目保存的课堂录音、发言、分析、练习、教学安排及学生和家长报告入口，
+  return <section className="support-panel deletion-panel" aria-label="课堂删除与资源清除">
+    <p className="eyebrow">课堂资料管理</p><h3>删除与资源清除</h3>
+    <p className="panel-intro">本机清理与供应方删除分别展示进度，任务状态可独立查询。</p>
+    <details className="deletion-confirmation"><summary>删除当前课堂与关联资料</summary>
+    <p className="privacy-note">删除会关闭本项目保存的课堂录音、发言、分析、练习、教学安排及学生和家长报告入口，
       并清除对应的本机文件。供应方删除尚未发起；已下载的离线副本无法远程收回。</p>
     {classroom ? <div>
-      <p>当前课堂：{classroom.title} · 版本 {classroom.revision}</p>
+      <div className="readonly-target"><span>本次操作对象</span><strong>{classroom.title}</strong>
+        <small>课堂版本 {classroom.revision}</small></div>
       <label><input type="checkbox" checked={formCurrent && form.understood} disabled={busy}
         onChange={(event) => setForm((previous) => ({ scope, understood: event.target.checked,
           confirmation: previous.scope === scope ? previous.confirmation : "" }))} />
@@ -123,27 +127,32 @@ export function DeletionPanel({ classroom, onRemoved }: {
         <input value={formCurrent ? form.confirmation : ""} autoComplete="off" maxLength={200} disabled={busy}
           onChange={(event) => setForm((previous) => ({ scope, confirmation: event.target.value,
             understood: previous.scope === scope && previous.understood }))} /></label>
-      <button disabled={busy || !formCurrent || !form.understood || form.confirmation !== classroom.title || unresolved}
+      <button className="danger-text"
+        disabled={busy || !formCurrent || !form.understood || form.confirmation !== classroom.title || unresolved}
         onClick={() => void remove()}>确认删除这堂课并清理资源</button>
       {unresolved && <p>这堂课已有未确认原请求，请先在下方用同一请求核对，不能为其另建删除请求。</p>}
     </div> : <p>选择课堂后可新建删除操作；切换或清空选择不会丢失下方原请求和已知任务。</p>}
+    </details>
     {error && <p role="alert">{error}</p>}
     {message && <p role="status">{message}</p>}
     <DeletionAttempts attempts={attempts} busy={busy} onRetry={(item) => void retryUnknown(item)}
       onInspect={(id) => void inspect(id)} />
-    <section aria-label="查询既有删除任务"><h3>查询删除进度</h3>
+    <section className="deletion-query" aria-label="查询既有删除任务"><h4>查询删除进度</h4>
       <p>可复制任务编号留存。不将课堂名称、正文或任务编号写入本地存储；服务端只允许操作人查看。</p>
       <label>任务编号<input value={taskId} onChange={(event) => setTaskId(event.target.value)} disabled={busy} /></label>
       <button disabled={busy || !taskId.trim()} onClick={() => void inspect(taskId)}>查询任务</button>
     </section>
-    {task && <section aria-label="删除任务状态">
-      <p>任务编号：{task.id} · 状态版本 {task.revision} · 对应课堂编号：{task.classroom_id}</p>
-      <p>建立时间：{new Date(task.created_at).toLocaleString("zh-CN")}</p>
-      <p>本机：{localNames[task.local_status]}；{task.local_complete ? "本机清理已完成" : "本机清理尚未完成"}，
-        剩余文件 {task.remaining_files} 个。</p>
-      <p>供应方：{task.external_status === "not_requested" ? "未发起外部删除请求" : "尚未确认"}；
-        {task.external_pending ? "外部数据删除仍待处理" : "请核对供应方回执"}。</p>
+    {task && <section className="history-card deletion-task" aria-label="删除任务状态">
+      <header className="panel-heading"><h4>清理任务状态</h4>
+        <span className="basis-label">状态版本 {task.revision}</span></header>
+      <p className="basis-label">建立时间：{new Date(task.created_at).toLocaleString("zh-CN")}</p>
+      <div className="summary-metrics"><div><span>本机文件</span><h4>{localNames[task.local_status]}</h4>
+        <p>剩余文件 {task.remaining_files} 个 · {task.local_complete ? "清理已完成" : "清理尚未完成"}</p></div>
+      <div><span>供应方数据</span><h4>{task.external_status === "not_requested" ? "尚未请求删除" : "尚未确认"}</h4>
+        <p>{task.external_pending ? "外部数据删除仍待处理" : "请核对供应方回执"}</p></div></div>
       <p>{task.notice}</p>
+      <details className="audit-details"><summary>任务编号与对应课堂</summary>
+        <p>任务：{task.id}</p><p>原课堂：{task.classroom_id}</p></details>
       {task.error && <p role="alert">{task.error}</p>}
       <button disabled={busy} onClick={() => void inspect(task.id)}>刷新状态</button>
       {!task.local_complete && <button disabled={busy} onClick={() => void inspect(task.id, true)}>
