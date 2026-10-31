@@ -42,13 +42,13 @@
 .question header h2 { font-size: 18px; }
 .question header > span { color: #2866b9; background: #eaf2ff; padding: 4px 7px; border-radius: 4px;
   align-self: flex-start; white-space: nowrap; font-size: 11px; }
-.question h3 { font-size: 14px; margin: 16px 0 4px; }
-.question p { color: #62718a; font-size: 14px; line-height: 1.8; }
+.question h3 { font-size: 16px; margin: 16px 0 4px; }
+.question p { color: #62718a; font-size: 16px; line-height: 1.8; }
 .question footer { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between;
   border-top: 1px solid #e5ebf3; padding-top: 10px; font-size: 12px; color: #64748b; }
 .question footer button { margin: 0; padding: 4px; border: 0; background: transparent;
   color: #1669ea; text-decoration: underline; }
-.question .pending { font-size: 12px; margin-bottom: 0; }
+.question .pending { font-size: 13px; margin-bottom: 0; }
 .stats { display: flex; flex-wrap: wrap; gap: 28px; margin-bottom: 26px; }
 .stats p { font-size: 13px; color: #64748b; }
 .stats strong { display: block; font-size: 27px; color: #1d4f92; }
