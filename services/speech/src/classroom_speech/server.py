@@ -27,15 +27,17 @@ import asyncio
 import json
 import os
 import uuid
+from dataclasses import asdict
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request, WebSocket, WebSocketDisconnect
 from fastapi.responses import FileResponse, Response
 from pydantic import BaseModel
 
-from .app_bridge import AppClient, AppForwarder
+from .transport.native_bridge import NativeClient, NativeForwarder
 from .engines import FunAsrEngine, try_load
 from .events import PROTOCOL_VERSION, SpeechEvent
+from .transport.frames import FrameConflict, FrameReceipt, FrameReceiver, InputFrame
 from .pipeline import Session
 from .spatial import ArrayConfig
 from .stages import build_stages
@@ -49,6 +51,7 @@ APP_TOKEN = os.environ.get("SPEECH_INGEST_TOKEN", "")  # 与应用侧同名环�
 
 app = FastAPI(title="classroom-speech", version=PROTOCOL_VERSION)
 sessions: dict[str, Session] = {}
+frame_receivers: dict[str, FrameReceiver] = {}
 _asr = None
 
 
@@ -84,32 +87,51 @@ def capabilities() -> dict:
         "identity": "不提供；声源只是线索",
         "timeline": {"timebase": "session_ms（样本计数）", "range_query": True, "context_window": {"default_before_ms": 30000, "default_after_ms": 60000},
                      "raw_clip": True, "persisted": "raw.wav + events.jsonl，服务重启后可回溯", "states": ["speech", "overlap", "no_speech_detected", "gap", "not_recorded", "not_processed_yet"]},
-        "app_forwarding": {"protocol": "app-draft-1", "configured": bool(APP_URL and len(APP_TOKEN.strip()) >= 32),
-                           "not_forwarded": ["source.position（方位）", "audio.available", "reliability_state", "diagnostics", "无文字的转写"]},
+        "app_forwarding": {"protocol": PROTOCOL_VERSION, "configured": bool(APP_URL and len(APP_TOKEN.strip()) >= 32),
+                           "not_forwarded": []},
         "stages": build_stages().origin,  # 每个阶段当前跑的是优化版（contrib）还是基准
     }
 
 
 @app.post("/v1/sessions")
 def create_session(req: CreateSession) -> dict:
+    if req.channels not in (1, 2) or req.data_origin not in ("live", "file_replay", "simulated"):
+        raise HTTPException(400, "需要1或2个真实通道及有效的数据来源")
+    if req.app_classroom_id and not (APP_URL and len(APP_TOKEN.strip()) >= 32):
+        raise HTTPException(400, "应用推送凭证尚未配置")
+    if req.app_classroom_id and req.data_origin == "simulated":
+        raise HTTPException(400, "模拟数据不能写入教学应用的可信入口")
     if req.sample_rate != 16000:
         raise HTTPException(400, "当前版本只接受 16 kHz，请在采集端重采样")
     sid = f"ses_{uuid.uuid4().hex[:12]}"
     sessions[sid] = Session(sid, DATA_DIR / sid, asr=asr_engine(), data_origin=req.data_origin,
                             cfg=ArrayConfig(mic_distance_m=MIC_DISTANCE), capture_started_unix_ms=req.capture_started_unix_ms)
     sessions[sid].channels = req.channels
+    frame_receivers[sid] = FrameReceiver(sessions[sid], req.channels)
     forwarding = False
     if req.app_classroom_id:
         if not (APP_URL and len(APP_TOKEN.strip()) >= 32):
             raise HTTPException(400, "未配置 SPEECH_APP_URL 或 SPEECH_INGEST_TOKEN（至少 32 字符），无法推送到教学应用")
         if req.data_origin == "simulated":
             raise HTTPException(400, "模拟数据不能写入教学应用的可信入口")
-        fwd = AppForwarder(AppClient(APP_URL, APP_TOKEN, req.app_classroom_id))
+        fwd = NativeForwarder(NativeClient(APP_URL, APP_TOKEN, req.app_classroom_id))
         sessions[sid].listeners.append(fwd)
         sessions[sid].app_forwarder = fwd
         forwarding = True
     return {"session_id": sid, "protocol_version": PROTOCOL_VERSION, "audio_origin_ms": 0, "channels": req.channels,
+            "recognizer_connected": sessions[sid].asr is not None,
             "app_forwarding": forwarding}
+
+
+@app.post("/v1/sessions/{sid}/frames", response_model=FrameReceipt)
+def receive_frame(sid: str, payload: InputFrame) -> FrameReceipt:
+    _get(sid)
+    try:
+        return frame_receivers[sid].accept(payload)
+    except FrameConflict as error:
+        raise HTTPException(409, str(error)) from None
+    except ValueError as error:
+        raise HTTPException(400, str(error)) from None
 
 
 @app.get("/v1/sessions/{sid}/app")
@@ -117,9 +139,16 @@ def app_forwarding(sid: str) -> dict:
     fwd = getattr(_get(sid), "app_forwarder", None)
     if fwd is None:
         return {"forwarding": False}
-    r = fwd.mapper.report
-    return {"forwarding": True, "stopped": fwd._stopped, "sent": r.sent, "duplicates": r.duplicates,
-            "not_forwarded": r.dropped, "errors": r.errors}
+    return {"forwarding": True, **asdict(fwd.report)}
+
+
+@app.post("/v1/sessions/{sid}/app/retry")
+def retry_forwarding(sid: str) -> dict:
+    fwd = getattr(_get(sid), "app_forwarder", None)
+    if fwd is None:
+        raise HTTPException(409, "会话未启用应用接入")
+    fwd.retry()
+    return {"forwarding": True, **asdict(fwd.report)}
 
 
 def _get(sid: str) -> Session:
