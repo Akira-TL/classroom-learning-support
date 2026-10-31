@@ -1,0 +1,9 @@
+.header { min-width: 0; }
+.tabs { display: flex; flex-wrap: wrap; gap: 8px; border-bottom: 1px solid #e3eaf4; margin-bottom: 12px; }
+.tabs.tabs button {
+  border: 0; border-bottom: 3px solid transparent; border-radius: 0;
+  padding: 11px 15px; margin: 0; background: transparent; color: #728198;
+}
+.tabs.tabs button[aria-pressed="true"] { color: #146cf5; border-bottom-color: #146cf5; font-weight: 650; }
+.source { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px; color: #718098; font-size: 12px; }
+.source a { margin-left: auto; white-space: nowrap; }
