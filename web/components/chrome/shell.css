@@ -1,0 +1,118 @@
+.shell-grid {
+  display: grid;
+  grid-template-columns: 164px minmax(0, 1fr);
+  grid-template-rows: 64px minmax(calc(100dvh - 64px), auto);
+  grid-template-areas: "header header" "rail content";
+  min-height: 100dvh;
+}
+.app-header {
+  grid-area: header;
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  height: 64px;
+  padding: 0 24px;
+  border-bottom: 1px solid var(--border);
+  background: #fff;
+}
+.app-brand { display: flex; align-items: center; gap: 10px; color: #18263e; font-size: 21px; font-weight: 700; }
+.brand-mark { display: flex; color: var(--accent); }
+.header-context { display: flex; align-items: center; gap: 16px; }
+.environment-badge { padding: 4px 9px; border-radius: 6px; background: #f1f4f8; color: #748198; font-size: 12px; }
+.header-user { display: flex; align-items: center; gap: 6px; color: #63718a; font-size: 13px; }
+.header-actions { display: flex; align-items: center; gap: 8px; }
+.header-actions button { min-height: 32px; margin: 0; padding: 6px 10px; font-size: 12px; }
+.app-rail {
+  grid-area: rail;
+  position: sticky;
+  top: 64px;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  height: calc(100dvh - 64px);
+  padding: 20px 10px 16px;
+  border-right: 1px solid var(--border);
+  background: #fafcff;
+}
+.rail-navigation { display: flex; flex-direction: column; gap: 8px; }
+.rail-item {
+  position: relative;
+  justify-content: flex-start;
+  gap: 11px;
+  width: 100%;
+  height: 46px;
+  margin: 0;
+  padding: 12px 14px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: #526079;
+  font-size: 14px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+.rail-item:hover:not(:disabled) { background: #f0f5fd; color: var(--accent); }
+.rail-item.is-active { background: #eaf2ff; color: var(--accent); font-weight: 650; }
+.rail-item.is-active::before {
+  position: absolute;
+  inset: 9px auto 9px -10px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--accent);
+  content: "";
+}
+.rail-note { margin: auto 5px 0; padding-top: 28px; color: #94a0b3; font-size: 11px; text-align: center; }
+.app-content { grid-area: content; min-width: 0; padding: 24px; outline: none; }
+.app-content:focus-visible { outline: 3px solid #82b0ff; outline-offset: -3px; }
+.shell-signed-out { grid-template-columns: minmax(0, 1fr); grid-template-areas: "header" "content"; }
+.shell-signed-out .app-content { display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+.skip-link {
+  position: fixed;
+  z-index: 100;
+  top: -64px;
+  left: 16px;
+  padding: 8px 12px;
+  background: #0665ff;
+  color: #fff;
+}
+.skip-link:focus { top: 12px; color: #fff; }
+@media (min-width: 1600px) {
+  .app-content { padding: 28px 32px; }
+}
+@media (max-width: 980px) {
+  .shell-grid { grid-template-columns: 148px minmax(0, 1fr); }
+  .app-header { padding: 0 18px; }
+  .app-brand { font-size: 19px; }
+  .app-content { padding: 18px; }
+  .rail-item { gap: 9px; padding-inline: 11px; }
+  .shell-signed-out { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 720px) {
+  .shell-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto 1fr;
+    grid-template-areas: "header" "rail" "content";
+  }
+  .app-header { position: relative; flex-wrap: wrap; height: auto; min-height: 64px; gap: 10px; padding: 14px 16px; }
+  .header-context { flex-wrap: wrap; gap: 10px; }
+  .header-user { display: none; }
+  .app-rail {
+    top: 0;
+    z-index: 20;
+    height: auto;
+    padding: 8px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--border);
+  }
+  .rail-navigation { flex-direction: row; gap: 6px; overflow-x: auto; padding: 3px; }
+  .rail-item { flex: 0 0 auto; gap: 7px; width: auto; height: 40px; padding: 9px 12px; font-size: 13px; }
+  .rail-item svg { width: 18px; height: 18px; }
+  .rail-item.is-active::before, .rail-note { display: none; }
+  .app-content { padding: 16px 12px 28px; }
+  .shell-signed-out { grid-template-rows: auto 1fr; grid-template-areas: "header" "content"; }
+  .shell-signed-out .app-content { padding: 28px 16px; }
+}
