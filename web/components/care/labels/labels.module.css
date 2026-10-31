@@ -23,10 +23,12 @@
 .audio { background: #f7faff; border-radius: 6px; padding: 12px; }
 .seats { display: grid; grid-template-columns: repeat(4,minmax(80px,1fr)); gap: 14px; padding: 25px 16px; }
 .seats button { min-height: 70px; padding: 10px; margin: 0; border: 1px solid #ccdaeb;
-  background: #f5f9ff; color: #405977; border-radius: 10px; }
+  background: #f5f9ff; color: #405977; border-radius: 10px;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; text-align: center; }
 .seats button[aria-pressed="true"] { background: #e2eeff; border: 2px solid #2b72d7; color: #095cc9; }
 .seats button:disabled { border-style: dashed; opacity: .5; }
-.seats small { display: block; margin-top: 4px; }
+.seats span { display: block; white-space: nowrap; font-size: 14px; font-weight: 600; }
+.seats small { display: block; margin: 0; white-space: nowrap; font-size: 12px; font-weight: 400; }
 .blackboard { text-align: center; color: #6a7f9b; background: #eaf0f7; border-radius: 5px; margin: 10px 20% 0; }
 .detail { display: grid; gap: 18px; }
 .windows { display: grid; grid-template-columns: minmax(320px,.9fr) minmax(0,1.1fr); gap: 20px; align-items: start; }

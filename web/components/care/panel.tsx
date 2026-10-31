@@ -19,8 +19,10 @@ export function CarePanel({ classroom, active = true, initialPerspective = "teac
     <div className={styles.blackboard}>讲台方向（示意）</div>
     <div className={styles.seats}>{seats(classroom.students).map((seat) => <button key={seat.position} type="button"
       disabled={!seat.student} aria-pressed={selected === seat.student}
+      aria-label={`${seat.student ?? "空位"}，${seat.position}号座位`}
       onClick={() => seat.student && setSelected(seat.student)}>
-      {seat.student ?? "空位"}<small>{seat.position} 号演示座位</small>
+      <span>{seat.student ? `学生${seat.student.replace(/^student-/, "")}` : "空位"}</span>
+      <small>{seat.position}号座位</small>
     </button>)}</div>
   </section>
   <div aria-label="学生信息面板">
