@@ -1,0 +1,37 @@
+.page { color: #20324d; line-height: 1.75; }
+.heading { margin: 4px 0 20px; }
+.heading h1 { font-size: 26px; margin-bottom: 6px; }
+.heading p, .muted { color: #78879d; font-size: 13px; }
+.layout { display: grid; grid-template-columns: 220px minmax(0,1fr); gap: 20px; align-items: start; }
+.roster, .card { background: #fff; border: 1px solid #dfe7f1; border-radius: 10px; padding: 20px; min-width: 0; }
+.roster { display: grid; gap: 5px; padding: 12px; }
+.roster button { text-align: left; border: 0; border-radius: 7px; background: transparent; margin: 0; color: #4b607c; }
+.roster button[aria-pressed="true"] { background: #edf4ff; color: #075ed8; }
+.body { display: grid; gap: 18px; }
+.body [hidden], .page [hidden] { display: none !important; }
+.periods { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.card h2 { font-size: 19px; margin: 0 0 12px; }
+.card h3 { font-size: 15px; margin: 16px 0 7px; }
+.card p { white-space: pre-wrap; overflow-wrap: anywhere; }
+.card label { display: block; margin: 12px 0; font-size: 14px; }
+.card input:not([type="checkbox"]), .card textarea, .card select {
+  display: block; width: 100%; margin-top: 6px; border: 1px solid #d4dfed; border-radius: 6px;
+  padding: 9px; color: #253852; background: #fff; font: inherit; }
+.card textarea { min-height: 90px; resize: vertical; }
+.card button { margin: 6px 8px 6px 0; }
+.badge { display: inline-block; background: #eaf3ff; color: #2368c4;
+  border-radius: 5px; padding: 3px 9px; font-size: 12px; }
+.observation { padding: 14px 0; border-top: 1px solid #edf0f5; }
+.observation time { font-size: 12px; color: #78879d; }
+.metrics { width: 100%; border-collapse: collapse; font-size: 14px; }
+.metrics th, .metrics td { border-bottom: 1px solid #e7edf4; padding: 9px; text-align: left; }
+.actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.reader { margin: 24px 0; }
+.reader article { border-top: 1px solid #e5ebf3; padding: 14px 0; }
+@media (max-width: 900px) {
+  .layout { grid-template-columns: 160px minmax(0,1fr); } .periods { grid-template-columns: 1fr; }
+}
+@media (max-width: 600px) {
+  .layout { grid-template-columns: 1fr; } .roster { display: flex; overflow-x: auto; }
+  .roster button { white-space: nowrap; } .card { padding: 16px; }
+}

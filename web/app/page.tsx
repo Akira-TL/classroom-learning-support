@@ -8,6 +8,7 @@ import { AppIcon } from "../components/chrome/icons";
 import { StudentReader } from "../components/students/reader";
 import { ParentReader } from "../components/reports/parent-reader";
 import { AdminOverview } from "../components/overview/panel";
+import { CareReader } from "../components/care/reader";
 import { selectionAfterRemoval } from "../lib/deletion/attempts";
 import { ApiError, api } from "../lib/api";
 import type { Classroom, ClassroomContent, User } from "../lib/types";
@@ -116,8 +117,10 @@ export default function Home() {
       <p>核对原话，确认学习证据，再形成练习与教学安排。</p>
       <p className="muted">当前使用成人模拟资料进行演示，真实语音服务尚待联调。</p>
     </div><LoginForm busy={busy} onLogin={login} /></div>
-      : user.role === "student" ? <StudentReader key={user.id} />
-        : user.role === "parent" ? <ParentReader key={user.id} />
+      : user.role === "student" ? <><StudentReader key={user.id} />
+        <CareReader key={`care-${user.id}`} audience="student" /></>
+        : user.role === "parent" ? <><ParentReader key={user.id} />
+          <CareReader key={`care-${user.id}`} audience="parent" /></>
           : user.role === "admin" ? <AdminOverview key={user.id} />
             : <TeacherHome key={user.id} view={view} onView={navigateView} classrooms={classrooms}
               selected={selected} formOpen={formOpen} formKey={formKey} busy={busy}

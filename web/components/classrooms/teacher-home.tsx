@@ -8,6 +8,7 @@ import { InputPanel } from "../inputs/panel";
 import { ManualExercises } from "../manual-exercises/panel";
 import { StudentFeedbackQueue } from "../students/feedback-queue";
 import { DeletionPanel } from "../deletion/panel";
+import { CarePanel } from "../care/panel";
 import "./teacher-home.css";
 
 interface Props {
@@ -47,11 +48,16 @@ export function TeacherHome(props: Props) {
         {view === "classrooms" && <InputPanel key={selected.id} classroomId={selected.id} />}
       </details>}
     </section>
-    <section hidden={view === "classrooms"} aria-label="教师工作区">
+    <section hidden={view !== "care"} aria-label="学生关怀工作区">
+      {selected ? <CarePanel key={selected.id} classroom={selected} active={view === "care"} />
+        : <div className="empty-state"><h1>先选择一堂课</h1><p>选择课堂名单，查看学生观察与跟进。</p>
+          <button onClick={() => props.onView("classrooms")}>返回课堂库</button></div>}
+    </section>
+    <section hidden={view === "classrooms" || view === "care"} aria-label="教师工作区">
       {selected ? <>
         <h1 className="sr-only">{selected.title}</h1>
         <SpeechPanel key={selected.id} classroom={selected} view={workspaceView}
-          active={view !== "classrooms"} onViewChange={props.onView} />
+          active={view !== "classrooms" && view !== "care"} onViewChange={props.onView} />
         <div hidden={view !== "teaching"}>
           <details className="surface-card classroom-tools"><summary>人工通用练习 · 无需个人学习证据</summary>
             <ManualExercises key={selected.id} classroomId={selected.id} /></details>

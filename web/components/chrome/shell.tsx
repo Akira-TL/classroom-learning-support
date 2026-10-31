@@ -16,6 +16,7 @@ const teacherNavigation: NavigationItem[] = [
   { view: "review", label: "核验工作台", icon: "review" },
   { view: "teaching", label: "教学支持", icon: "teaching" },
   { view: "publishing", label: "发布反馈", icon: "publishing" },
+  { view: "care", label: "学生关怀", icon: "parent" },
 ];
 
 const roleNavigation: Record<Exclude<User["role"], "teacher">, NavigationItem> = {
@@ -37,7 +38,8 @@ export interface ShellProps {
 }
 
 export function Shell({ user, activeView, onNavigate, children, actions }: ShellProps) {
-  const classroomWorkspace = user?.role === "teacher" && ["review", "teaching", "publishing"].includes(activeView);
+  const classroomWorkspace = user?.role === "teacher"
+    && ["review", "teaching", "publishing", "care"].includes(activeView);
   const navigation = user
     ? user.role === "teacher" ? teacherNavigation : [roleNavigation[user.role]]
     : [];
@@ -58,6 +60,8 @@ export function Shell({ user, activeView, onNavigate, children, actions }: Shell
             onClick={() => onNavigate("teaching")}>AI教学反馈</button>
           <button type="button" aria-current={activeView === "publishing" ? "page" : undefined}
             onClick={() => onNavigate("publishing")}>发布反馈</button>
+          <button type="button" aria-current={activeView === "care" ? "page" : undefined}
+            onClick={() => onNavigate("care")}>学生关怀</button>
         </nav>}
         <div className="header-context">
           <span className="environment-badge">演示环境</span>
