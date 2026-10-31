@@ -15,6 +15,7 @@ import type { Classroom, ClassroomContent, DemoRole, User } from "../lib/types";
 
 export default function Home() {
   const [view, setView] = useState("classrooms");
+  const [recipientView, setRecipientView] = useState<"status" | "learning">("status");
   const [user, setUser] = useState<User | null>(null);
   const authScope = useRef({ userId: user?.id ?? null, generation: 0 });
   if (authScope.current.userId !== (user?.id ?? null)) {
@@ -33,7 +34,6 @@ export default function Home() {
 
   function navigateView(nextView: string) {
     setView(nextView);
-    window.scrollTo({ top: 0, behavior: "auto" });
   }
 
   function report(failure: unknown) {
@@ -66,6 +66,7 @@ export default function Home() {
   async function login(role: DemoRole, studentId?: string) {
     await perform(async () => {
       const current = await api.demoLogin(role, studentId);
+      setRecipientView("status");
       setUser(current); setSelected(null); setFormOpen(false); setView("classrooms");
       setClassrooms(current.role === "teacher" ? await api.classrooms() : []);
       setNotice("已进入所选演示角色。");
@@ -112,15 +113,25 @@ export default function Home() {
     </>}>
     {error && <p role="alert">{error}</p>}
     <p className="app-status" role="status" aria-live="polite">{busy ? "正在处理，请稍候…" : notice}</p>
+    <div className="page-stage">
     {!user ? <div className="login-layout"><div className="login-intro">
       <span className="badge badge-blue">课堂学习支持演示</span><h1>走进课堂，<br />看见每一位学生。</h1>
       <p>从教室布局进入学生信息，查看声音标签、历史变化与不同角色的解释。</p>
       <p className="muted">选择角色即可体验。</p>
     </div><LoginForm busy={busy} onLogin={login} /></div>
-      : user.role === "student" ? <><StudentReader key={user.id} />
-        <CareReader key={`care-${user.id}`} audience="student" studentId={user.student_id ?? ""} /></>
-        : user.role === "parent" ? <><ParentReader key={user.id} />
-          <CareReader key={`care-${user.id}`} audience="parent" studentId={user.student_id ?? ""} /></>
+      : user.role === "student" || user.role === "parent" ? <section className="recipient-workspace">
+        <nav className="recipient-tabs" aria-label="个人报告内容">
+          <button type="button" aria-pressed={recipientView === "status"}
+            onClick={() => setRecipientView("status")}>课堂状态</button>
+          <button type="button" aria-pressed={recipientView === "learning"}
+            onClick={() => setRecipientView("learning")}>学习反馈</button>
+        </nav>
+        <div className="recipient-pane" hidden={recipientView !== "status"}>
+          <CareReader key={`care-${user.id}`} audience={user.role} studentId={user.student_id ?? ""} /></div>
+        <div className="recipient-pane" hidden={recipientView !== "learning"}>
+          {user.role === "student" ? <StudentReader key={user.id} /> : <ParentReader key={user.id} />}
+        </div>
+      </section>
           : user.role === "admin" ? <AdminOverview key={user.id} />
             : <TeacherHome key={`${user.id}/${user.display_role ?? user.role}`} displayRole={user.display_role}
               view={view} onView={navigateView} classrooms={classrooms}
@@ -131,5 +142,6 @@ export default function Home() {
               })} onOpen={(id) => perform(async () => {
                 setSelected(await api.classroom(id)); setFormOpen(false); setView("review");
               })} />}
+    </div>
   </Shell>;
 }

@@ -23,7 +23,7 @@ interface Props {
 export function TeacherHome(props: Props) {
   const { view, selected, busy } = props;
   const workspaceView = view === "teaching" || view === "publishing" ? view : "review";
-  return <>
+  return <div className={`teacher-pages teacher-view-${view}`}>
     <section hidden={view !== "classrooms"} aria-label="课堂管理" className="classroom-catalog">
       <header className="catalog-heading"><div><p className="eyebrow">教学准备</p><h1>我的课堂</h1>
         <p>从具体的题目与课堂表达出发，保留每一次教师核验。</p></div>
@@ -60,6 +60,7 @@ export function TeacherHome(props: Props) {
         <h1 className="sr-only">{selected.title}</h1>
         <SpeechPanel key={selected.id} classroom={selected} view={workspaceView}
           active={view !== "classrooms" && view !== "care"} onViewChange={props.onView} />
+        <details className="workspace-utilities"><summary>课堂工具与资料</summary>
         <div hidden={view !== "teaching"}>
           <details className="surface-card classroom-tools"><summary>人工通用练习 · 无需个人学习证据</summary>
             <ManualExercises key={selected.id} classroomId={selected.id} /></details>
@@ -71,12 +72,14 @@ export function TeacherHome(props: Props) {
           <p>教学目标：{selected.objective}</p><p>材料来源：{selected.source}</p>
           <p>使用授权：{selected.authorization}</p><p>名单：{selected.students.join("、")}</p>
           <p>课堂标识：{selected.id} · 版本 {selected.revision}</p></details>
+        </details>
       </> : <div className="empty-state"><h1>先选择一堂课</h1>
         <p>核验、教学支持和发布反馈都与具体课堂关联。</p>
         <button className="button-primary" onClick={() => props.onView("classrooms")}>查看我的课堂</button></div>}
     </section>
-    <div hidden={view !== "classrooms" && view !== "publishing"} className="classroom-maintenance">
+    <details hidden={view !== "classrooms" && view !== "publishing"} className="classroom-maintenance">
+      <summary>课堂资源清理</summary>
       <DeletionPanel classroom={selected} onRemoved={props.onRemoved} />
-    </div>
-  </>;
+    </details>
+  </div>;
 }

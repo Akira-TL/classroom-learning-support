@@ -1,13 +1,15 @@
 .shell-grid {
   display: grid;
   grid-template-columns: 164px minmax(0, 1fr);
-  grid-template-rows: 64px minmax(calc(100dvh - 64px), auto);
+  grid-template-rows: auto minmax(0, 1fr);
   grid-template-areas: "header header" "rail content";
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
 }
 .app-header {
   grid-area: header;
-  position: sticky;
+  position: relative;
   top: 0;
   z-index: 30;
   display: flex;
@@ -28,13 +30,14 @@
 .header-actions button { min-height: 32px; margin: 0; padding: 6px 10px; font-size: var(--font-control); }
 .app-rail {
   grid-area: rail;
-  position: sticky;
-  top: 64px;
-  align-self: start;
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
-  height: calc(100dvh - 64px);
+  height: 100%;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
   padding: 20px 10px 16px;
   border-right: 1px solid var(--border);
   background: #fafcff;
@@ -67,7 +70,13 @@
   content: "";
 }
 .rail-note { margin: auto 5px 0; padding-top: 28px; color: #94a0b3; font-size: 11px; text-align: center; }
-.app-content { grid-area: content; min-width: 0; padding: 12px; outline: none; }
+.app-content { grid-area: content; display: flex; flex-direction: column; min-width: 0; min-height: 0;
+  overflow: hidden; padding: 12px; outline: none; }
+.app-content > [role="alert"], .app-content > [role="status"] { flex: 0 0 auto; max-height: 20dvh; overflow: auto; }
+.page-stage { flex: 1; display: flex; min-width: 0; min-height: 0; overflow: hidden; }
+.page-stage > .login-layout { width: 100%; height: 100%; min-height: 0; margin: 0 auto;
+  overflow: hidden; align-items: center; }
+.page-stage .login-layout > section { max-height: 100%; overflow: auto; overscroll-behavior: contain; }
 .shell-classroom { grid-template-columns: minmax(0,1fr); grid-template-areas: "header" "content"; }
 .shell-classroom .app-header { padding: 0 28px; gap: 16px; }
 .shell-classroom .app-brand { font-size: 19px; white-space: nowrap; }
@@ -76,8 +85,8 @@
   font-size: 15px; margin: 0; padding: 10px 14px; white-space: nowrap; }
 .classroom-navigation button[aria-current="page"] { color: #075bd3; background: #edf4ff; font-weight: 650; }
 .shell-classroom .environment-badge { display: none; }
-.shell-classroom .app-content { padding: 14px 28px 28px; }
-@media (max-width: 1000px) {
+.shell-classroom .app-content { padding: 14px 24px 18px; }
+@media (max-width: 1400px) {
   .shell-classroom .app-header { flex-wrap: wrap; height: auto; min-height: 64px; padding: 12px; }
   .shell-classroom .classroom-navigation { order: 3; width: 100%; margin-left: 0; overflow-x: auto; }
   .shell-classroom .app-content { padding: 12px; }
@@ -85,7 +94,7 @@
 }
 .app-content:focus-visible { outline: 3px solid #82b0ff; outline-offset: -3px; }
 .shell-signed-out { grid-template-columns: minmax(0, 1fr); grid-template-areas: "header" "content"; }
-.shell-signed-out .app-content { display: flex; justify-content: center; align-items: center; padding: 40px 20px; }
+.shell-signed-out .app-content { padding: 20px; }
 .skip-link {
   position: fixed;
   z-index: 100;
@@ -105,7 +114,7 @@
 @media (max-width: 720px) {
   .shell-grid {
     grid-template-columns: minmax(0, 1fr);
-    grid-template-rows: auto auto 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
     grid-template-areas: "header" "rail" "content";
   }
   .app-header { position: relative; flex-wrap: wrap; height: auto; min-height: 64px; gap: 10px; padding: 14px 16px; }
@@ -124,7 +133,10 @@
   .rail-item { flex: 0 0 auto; gap: 7px; width: auto; height: 40px; padding: 9px 12px; font-size: 14px; }
   .rail-item svg { width: 18px; height: 18px; }
   .rail-item.is-active::before, .rail-note { display: none; }
-  .app-content { padding: 16px 12px 28px; }
-  .shell-signed-out { grid-template-rows: auto 1fr; grid-template-areas: "header" "content"; }
-  .shell-signed-out .app-content { padding: 28px 16px; }
+  .app-content { padding: 12px; }
+  .shell-classroom { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "header" "content"; }
+  .shell-signed-out { grid-template-rows: auto minmax(0, 1fr); grid-template-areas: "header" "content"; }
+  .shell-signed-out .app-content { padding: 12px; }
+  .page-stage > .login-layout { display: block; padding: 0; }
+  .page-stage .login-intro { display: none; }
 }

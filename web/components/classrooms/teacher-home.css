@@ -1,20 +1,31 @@
-.classroom-catalog { max-width: 1320px; margin: 0 auto; }
+.teacher-pages { flex: 1; display: flex; flex-direction: column; min-width: 0; min-height: 0; overflow: hidden; }
+.teacher-pages > section:not([hidden]) { flex: 1; display: flex; flex-direction: column;
+  min-width: 0; min-height: 0; overflow: auto; overscroll-behavior: contain; }
+.teacher-pages [hidden] { display: none !important; }
+.classroom-catalog { width: 100%; max-width: 1320px; margin: 0 auto; }
 .catalog-heading, .workspace-heading { display: flex; justify-content: space-between; align-items: center;
   gap: 24px; padding: 14px 4px 24px; }
 .catalog-heading h1, .workspace-heading h1 { margin: 4px 0 8px; font-size: 25px; }
 .catalog-heading p { margin: 0; color: var(--color-muted, #6c778c); }
 .eyebrow { font-size: 12px; letter-spacing: .06em; color: #64748b; }
-.classroom-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; }
+.classroom-cards { flex: 1; display: grid; min-height: 0; overflow: auto; overscroll-behavior: contain;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; align-content: start; }
 .classroom-cards .surface-card { padding: 24px; }
 .classroom-cards h2 { font-size: 21px; margin: 22px 0 12px; }
 .catalog-card-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .catalog-card-top time { font-size: 13px; color: #6c778c; }
 .workspace-heading-actions { display: flex; align-items: center; flex-wrap: wrap; gap: 12px; }
-.classroom-editor { margin: 24px 0; padding: 28px; }
-.classroom-tools { margin: 22px 0; padding: 18px 22px; }
+.classroom-editor { flex: 0 1 55%; min-height: 150px; overflow: auto; overscroll-behavior: contain;
+  margin: 12px 0; padding: 20px; }
+.classroom-tools { margin: 12px 0; padding: 12px 18px; }
+.classroom-catalog > .classroom-tools { flex: 0 1 auto; max-height: 45%; overflow: auto; }
 .classroom-tools > summary { font-weight: 600; }
 .classroom-tools[open] > summary { margin-bottom: 20px; }
-.classroom-maintenance { max-width: 1320px; margin: 24px auto; }
+.classroom-maintenance { flex: 0 0 auto; width: 100%; max-width: 1320px; max-height: 35%;
+  overflow: auto; overscroll-behavior: contain; margin: 8px auto 0; padding: 10px 16px;
+  background: #fff; border: 1px solid var(--border); border-radius: 8px; }
+.workspace-utilities { flex: 0 1 auto; max-height: 35%; min-height: 36px; overflow: auto;
+  overscroll-behavior: contain; margin: 8px 0 0; padding: 8px 12px; border-top: 1px solid var(--border); }
 .classroom-catalog [hidden], [aria-label="教师工作区"][hidden], .classroom-maintenance[hidden] { display: none; }
 .app-status:empty { display: none; }
 .login-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);

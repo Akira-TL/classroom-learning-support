@@ -29,9 +29,11 @@
   --color-background: var(--canvas);
 }
 * { box-sizing: border-box; }
-html { min-width: 320px; background: var(--canvas); }
+html { min-width: 320px; height: 100%; overflow: hidden; background: var(--canvas); }
 body {
   margin: 0;
+  height: 100dvh;
+  overflow: hidden;
   color: var(--text);
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", system-ui, sans-serif;
   font-size: var(--font-body);
