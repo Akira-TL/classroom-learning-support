@@ -63,6 +63,7 @@ class NativeForwarder:
     def __init__(self, client: NativeClient) -> None:
         self.client = client
         self.report = ForwardingReport()
+        self._report_lock = threading.Lock()
         self._queue: queue.Queue[SpeechEvent] = queue.Queue()
         self._resume = threading.Event()
         self._resume.set()
@@ -70,7 +71,8 @@ class NativeForwarder:
         self._thread.start()
 
     def __call__(self, event: SpeechEvent) -> None:
-        self.report.pending += 1
+        with self._report_lock:
+            self.report.pending += 1
         self._queue.put(event)
 
     def retry(self) -> None:
@@ -99,7 +101,8 @@ class NativeForwarder:
                 else:
                     self.report.sent += int(created)
                     self.report.duplicates += int(not created)
-                    self.report.pending -= 1
+                    with self._report_lock:
+                        self.report.pending -= 1
                     self.report.error = None
                     self.report.event_id = None
                     self.report.stopped = False
@@ -112,3 +115,5 @@ class NativeForwarder:
                     self.report.stopped = True
                     self._resume.clear()
             self._queue.task_done()
+            if event.event_type == "session.ended":
+                return
