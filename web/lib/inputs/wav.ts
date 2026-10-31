@@ -1,4 +1,4 @@
-export interface PcmWav { sampleRate: number; samples: number; pcm: Uint8Array; }
+export interface PcmWav { sampleRate: number; channels: number; samples: number; pcm: Uint8Array; }
 function tag(view: DataView, offset: number): string {
   return String.fromCharCode(...[0, 1, 2, 3].map((index) => view.getUint8(offset + index)));
 }
@@ -10,6 +10,7 @@ export function parseWav(buffer: ArrayBuffer): PcmWav {
   const end = view.getUint32(4, true) + 8;
   if (end !== view.byteLength) throw new Error("WAV 声明长度与实际文件不一致。");
   let rate = 0;
+  let channels = 0;
   let formatFound = false;
   let pcm: Uint8Array | null = null;
   let offset = 12;
@@ -21,11 +22,12 @@ export function parseWav(buffer: ArrayBuffer): PcmWav {
     if (name === "fmt ") {
       if (formatFound || size < 16) throw new Error("WAV 格式块缺失或重复。");
       const encoding = view.getUint16(data, true);
-      const channels = view.getUint16(data + 2, true);
+      channels = view.getUint16(data + 2, true);
       rate = view.getUint32(data + 4, true);
-      if (encoding !== 1 || channels !== 1 || view.getUint16(data + 14, true) !== 16
-        || view.getUint16(data + 12, true) !== 2 || view.getUint32(data + 8, true) !== rate * 2) {
-        throw new Error("仅支持 PCM16 单声道 WAV；不接受浮点、压缩、多声道或格式字段不一致的文件。");
+      if (encoding !== 1 || ![1, 2].includes(channels) || view.getUint16(data + 14, true) !== 16
+        || view.getUint16(data + 12, true) !== channels * 2
+        || view.getUint32(data + 8, true) !== rate * channels * 2) {
+        throw new Error("仅支持 PCM16 单声道或双声道 WAV；不接受浮点、压缩或格式字段不一致的文件。");
       }
       formatFound = true;
     } else if (name === "data") {
@@ -36,11 +38,11 @@ export function parseWav(buffer: ArrayBuffer): PcmWav {
     if (offset > end) throw new Error("WAV 数据块填充不完整。");
   }
   if (offset !== end) throw new Error("WAV 尾部存在不完整的数据块。");
-  if (!formatFound || !pcm || pcm.length === 0 || pcm.length % 2 || rate < 8000 || rate > 48000) {
-    throw new Error("需提供采样率 8—48kHz、非空且样本完整的 PCM16 单声道 WAV。");
+  if (!formatFound || !pcm || pcm.length === 0 || pcm.length % (channels * 2) || rate !== 16000) {
+    throw new Error("真实语音服务需要16kHz、非空且样本完整的 PCM16 单声道或双声道 WAV。");
   }
-  if (pcm.length > 20 * 1024 * 1024 - 44 || pcm.length / 2 > rate * 600) {
+  if (pcm.length > 20 * 1024 * 1024 - 44 || pcm.length / (channels * 2) > rate * 600) {
     throw new Error("音频超过本机诊断限制：最多10分钟且原始数据小于20MiB。");
   }
-  return { sampleRate: rate, samples: pcm.length / 2, pcm };
+  return { sampleRate: rate, channels, samples: pcm.length / (channels * 2), pcm };
 }

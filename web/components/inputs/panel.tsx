@@ -70,16 +70,16 @@ export function InputPanel({ classroomId }: { classroomId: string }) {
         setNotice("等待麦克风权限或设备，可点击取消。拒绝授权不会生成识别结果。");
         await capture.start();
         if (generation.current === epoch && controller.current) {
-          setNotice("麦克风权限已取得，本机采集已开始；识别服务仍未连接。");
+          setNotice("麦克风权限已取得，音频正在送往本机语音服务；请在时间线核验返回结果。");
         }
       } else {
-        if (!file) throw new Error("请先选择 PCM16 单声道 WAV 文件。");
+        if (!file) throw new Error("请先选择16kHz PCM16 单声道或双声道 WAV 文件。");
         if (file.size > 20 * 1024 * 1024) throw new Error("文件超过20MiB限制。");
         const wav = parseWav(await file.arrayBuffer());
         if (generation.current !== epoch) return;
         const capture = new FileStream(classroomId, wav, callbacks(epoch));
         controller.current = capture; await capture.start();
-        setNotice("按真实样本时长发送，不进行转写或定位。每次开始均新建会话。");
+        setNotice("按真实样本时长发送到语音服务。每次开始均新建会话，结果需教师核验。");
       }
     } catch (failure) {
       if (generation.current === epoch) {
@@ -114,17 +114,17 @@ export function InputPanel({ classroomId }: { classroomId: string }) {
     try {
       const value = await inputsApi.recover(classroomId, session.id);
       setSessions((previous) => previous.map((item) => item.id === value.id ? value : item));
-      setNotice("已请求手动恢复本机归档；没有连接识别服务。");
+      setNotice("已请求恢复同一会话，保留原样本和语音会话标识。");
     } catch (failure) { setError(failure instanceof Error ? failure.message : "归档恢复未确认。"); }
     finally { setBusy(false); }
   }
-  return <section aria-label="本机音频采集与传输诊断">
-    <h3>本机音频采集与传输诊断</h3>
-    <p>识别服务未连接。这里只传输并归档本机音频，不会生成文字、位置或学生身份，不能据此通过真实语音联调验收。</p>
+  return <section aria-label="课堂音频输入">
+    <h3>课堂音频输入</h3>
+    <p>音频由本机语音服务处理，结果进入教师核验时间线。单声道输入不提供双麦克风方位判断。</p>
     {error && <p role="alert">{error}</p>}
     <p role="status" aria-live="polite">{notice}</p>
     <details><summary>文件按真实速度发送</summary>
-      <label>PCM16 单声道 WAV（8—48kHz）<input type="file" accept=".wav,audio/wav" disabled={Boolean(mode) || busy}
+      <label>PCM16 单声道或双声道 WAV（16kHz）<input type="file" accept=".wav,audio/wav" disabled={Boolean(mode) || busy}
         onChange={(event) => setFile(event.target.files?.[0] ?? null)} /></label>
       <button disabled={Boolean(mode) || busy || !file} onClick={() => void start("file_stream")}>开始文件输入</button>
       <button disabled={busy || mode !== "file_stream" || activeSession.current?.status !== "recording"}
@@ -143,12 +143,17 @@ export function InputPanel({ classroomId }: { classroomId: string }) {
     {sessions.length === 0 && <p>暂无本机音频输入会话。</p>}
     {sessions.map((session) => <article key={session.id}>
       <h4>{session.input_mode === "microphone" ? "麦克风" : "文件流"}：{inputStatusNames[session.status]}</h4>
-      <p>会话：{session.id}；处理模式：仅采集归档；识别连接：未连接。</p>
-      <p>实际采样率 {session.sample_rate}Hz，单声道 PCM16；已接收 {session.received_samples} 个样本，
+      <p>会话：{session.id}；
+        处理模式：{session.processing_mode === "speech_stream" ? "语音识别与归档" : "仅采集归档"}；
+        识别连接：{session.recognizer_connected ? "已连接" : "未连接"}。</p>
+      <p>实际采样率 {session.sample_rate}Hz，{session.channels}声道 PCM16；已接收 {session.received_samples} 个样本，
         音频时长 {(session.received_samples / session.sample_rate).toFixed(3)} 秒；下一帧序号 {session.expected_sequence}。</p>
       {session.error && <p role="alert">{session.error}</p>}
-      {session.status === "finishing" && <button disabled={busy} onClick={() => void recover(session)}>
-        手动恢复归档（仅采集，不连接识别）
+      {session.speech_error && <p role="alert">{session.speech_error}</p>}
+      {session.forwarding_pending && <p role="status">语音结果正在投递，请刷新状态；尚未确认全部接入。</p>}
+      {(session.status === "finishing" || (session.status === "failed" && session.speech_session_id)) && <button
+        disabled={busy} onClick={() => void recover(session)}>
+        恢复本次会话
       </button>}
       {session.status === "ended" && session.audio_asset
         ? <audio controls preload="none" src={inputsApi.audio(classroomId, session.id)} />
@@ -156,3 +161,4 @@ export function InputPanel({ classroomId }: { classroomId: string }) {
     </article>)}
   </section>;
 }
+

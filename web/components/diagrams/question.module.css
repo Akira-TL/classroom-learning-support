@@ -1,0 +1,5 @@
+.figure { width: 100%; max-width: 420px; margin: 18px 0; }
+.figure .graphic { display: block; width: 100%; max-width: 100%; height: auto; }
+.figure .caption { margin-top: 10px; color: #6d7a90; font-size: 12px; line-height: 1.65; text-align: center; }
+.caption span { display: block; }
+.caption .ratio { margin-bottom: 3px; color: #536681; font-size: 14px; font-weight: 500; }

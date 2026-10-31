@@ -9,15 +9,18 @@ from ..models import StrictModel
 class CreateInput(StrictModel):
     input_mode: Literal["microphone", "file_stream"]
     sample_rate: int = Field(strict=True, ge=8000, le=48000)
-    channels: int = Field(strict=True, ge=1, le=1)
+    channels: int = Field(strict=True, ge=1, le=2)
     encoding: Literal["pcm_s16le"]
+    processing_mode: Literal["capture_only", "speech_stream"] = "capture_only"
 
 
 class InputSession(CreateInput):
     id: str
     classroom_id: str
-    processing_mode: Literal["capture_only"] = "capture_only"
-    recognizer_connected: Literal[False] = False
+    recognizer_connected: bool = False
+    speech_session_id: str | None = None
+    forwarding_pending: bool = False
+    speech_error: str | None = None
     status: Literal["recording", "paused", "finishing", "ended", "failed"] = "recording"
     received_samples: int = 0
     expected_sequence: int = 0

@@ -173,7 +173,10 @@ def test_invalid_references_and_cross_origin_writes(
         assert response.status_code == 403
 
 
-def test_unconfigured_password_does_not_enable_accounts(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_unconfigured_password_keeps_legacy_login_disabled_but_demo_entry_available(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
     monkeypatch.delenv("DEMO_PASSWORD", raising=False)
-    with pytest.raises(RuntimeError, match="DEMO_PASSWORD"):
-        create_app(tmp_path / "db.sqlite3")
+    with TestClient(create_app(tmp_path / "db.sqlite3")) as client:
+        assert client.post("/api/auth/login", json={"username": "teacher-01", "password": ""}).status_code == 401
+        assert client.post("/api/auth/demo-login", json={"role": "teacher"}).status_code == 200

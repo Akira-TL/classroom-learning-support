@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { questionStatus, reportsApi } from "../../lib/reports";
 import type { ParentQuestion } from "../../lib/reports";
+import "../presentation/role-panels.css";
 
 export function QuestionQueue({ classroomId, reportIds }: { classroomId: string; reportIds: string[] }) {
   const [items, setItems] = useState<ParentQuestion[]>([]);
@@ -31,8 +32,8 @@ export function QuestionQueue({ classroomId, reportIds }: { classroomId: string;
     return () => { active = false; };
   }, [classroomId, filterKey]);
 
-  return <section aria-label="教师处理家长疑问">
-    <h5>这条学习证据对应的家长疑问</h5>
+  return <section className="parent-question-queue" aria-label="教师处理家长疑问">
+    <h4>家长疑问与回复</h4>
     <button onClick={() => void load()}>刷新家长疑问</button>
     {error && <p role="alert">{error}</p>}
     {items.length === 0 && <p>对应报告暂无家长疑问。</p>}
@@ -58,8 +59,9 @@ function QuestionEditor({ classroomId, item, onSaved }: {
     } catch (cause: unknown) { setError(cause instanceof Error ? cause.message : "回复未保存，填写内容已保留"); }
     finally { setBusy(false); }
   }
-  return <article>
-    <p>家长：{item.parent_id} · 报告 {item.report_id.slice(0, 8)} · {questionStatus[item.status]}</p>
+  return <article className="history-card parent-question-item">
+    <header className="panel-heading"><strong>来自家长的疑问</strong>
+      <span className={`status-badge status-${item.status}`}>{questionStatus[item.status]}</span></header>
     <p>{item.text}</p>
     {revision !== item.revision && <div role="status">
       <p>当前版本已变化。服务器回复：{item.response ?? "尚无回复"}。填写内容已保留，请核对。</p>
@@ -69,7 +71,10 @@ function QuestionEditor({ classroomId, item, onSaved }: {
       setAction(event.target.value === "dismissed" ? "dismissed" : "answered");
     }}><option value="answered">回复家长</option><option value="dismissed">说明不采纳原因</option></select></label>
     <label>教师回复<textarea maxLength={3000} value={text} onChange={(event) => setText(event.target.value)} /></label>
-    <button disabled={busy || !text.trim() || revision !== item.revision} onClick={() => void save()}>保存处理结果</button>
+    <button className="primary-button" disabled={busy || !text.trim() || revision !== item.revision}
+      onClick={() => void save()}>保存教师回复</button>
+    <details className="audit-details"><summary>查看对应报告与版本</summary>
+      <p>家长：{item.parent_id} · 报告：{item.report_id} · 回复版本：{item.revision}</p></details>
     {error && <p role="alert">{error}</p>}
   </article>;
 }

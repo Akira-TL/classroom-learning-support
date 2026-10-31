@@ -1,0 +1,88 @@
+"use client";
+
+import type { ReactNode } from "react";
+import type { User } from "../../lib/types";
+import { AppIcon, type AppIconName } from "./icons";
+import { sessionRoleName } from "./roles";
+import "./shell.css";
+
+interface NavigationItem {
+  view: string;
+  label: string;
+  icon: AppIconName;
+}
+
+const teacherNavigation: NavigationItem[] = [
+  { view: "classrooms", label: "课堂", icon: "classrooms" },
+  { view: "review", label: "核验工作台", icon: "review" },
+  { view: "teaching", label: "教学支持", icon: "teaching" },
+  { view: "publishing", label: "发布反馈", icon: "publishing" },
+  { view: "care", label: "课堂详情", icon: "parent" },
+];
+
+const roleNavigation: Record<Exclude<User["role"], "teacher">, NavigationItem> = {
+  student: { view: "student", label: "我的学习反馈", icon: "student" },
+  parent: { view: "parent", label: "孩子的学习反馈", icon: "parent" },
+  admin: { view: "admin", label: "教学支持汇总", icon: "admin" },
+};
+
+export interface ShellProps {
+  user: User | null;
+  activeView: string;
+  onNavigate: (view: string) => void;
+  children: ReactNode;
+  actions?: ReactNode;
+}
+
+export function Shell({ user, activeView, onNavigate, children, actions }: ShellProps) {
+  const classroomWorkspace = user?.role === "teacher"
+    && ["review", "teaching", "publishing", "care"].includes(activeView);
+  const navigation = user
+    ? user.role === "teacher" ? teacherNavigation : [roleNavigation[user.role]]
+    : [];
+
+  return (
+    <div className={`shell-grid${user ? "" : " shell-signed-out"}${classroomWorkspace ? " shell-classroom" : ""}`}>
+      <a className="skip-link" href="#app-main-content">跳转到主要内容</a>
+      <header className="app-header">
+        <div className="app-brand">
+          <span className="brand-mark"><AppIcon name="teaching" size={22} /></span>
+          <span>课堂学习支持</span>
+        </div>
+        {classroomWorkspace && <nav className="classroom-navigation" aria-label="课堂工作区">
+          <button type="button" onClick={() => onNavigate("classrooms")}>← 返回课堂库</button>
+          <button type="button" aria-current={activeView === "review" ? "page" : undefined}
+            onClick={() => onNavigate("review")}>课堂分析</button>
+          <button type="button" aria-current={activeView === "teaching" ? "page" : undefined}
+            onClick={() => onNavigate("teaching")}>AI教学反馈</button>
+          <button type="button" aria-current={activeView === "publishing" ? "page" : undefined}
+            onClick={() => onNavigate("publishing")}>发布反馈</button>
+          <button type="button" aria-current={activeView === "care" ? "page" : undefined}
+            onClick={() => onNavigate("care")}>课堂详情</button>
+        </nav>}
+        <div className="header-context">
+          <span className="environment-badge">演示环境</span>
+          {user && <span className="header-user" title={user.id}>
+            <AppIcon name="user" size={18} />{sessionRoleName(user)}
+          </span>}
+          {actions && <div className="header-actions">{actions}</div>}
+        </div>
+      </header>
+      {user && !classroomWorkspace && <aside className="app-rail">
+        <nav className="rail-navigation" aria-label="主要功能">
+          {navigation.map((item) => <button
+            key={item.view}
+            type="button"
+            className={`rail-item${activeView === item.view ? " is-active" : ""}`}
+            aria-current={activeView === item.view ? "page" : undefined}
+            onClick={() => onNavigate(item.view)}
+          >
+            <AppIcon name={item.icon} /><span>{item.label}</span>
+          </button>)}
+        </nav>
+        <p className="rail-note">教师核验后发布</p>
+      </aside>}
+      <main id="app-main-content" className="app-content" tabIndex={-1}>{children}</main>
+    </div>
+  );
+}

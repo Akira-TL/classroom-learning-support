@@ -7,7 +7,7 @@ async function call<T>(path: string, schema: z.ZodType<T>, method = "GET", body?
   let response: Response;
   try {
     response = await fetch(path, {
-      method, body, credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(15000),
+      method, body, credentials: "same-origin", cache: "no-store", signal: AbortSignal.timeout(125000),
       headers: body ? { "Content-Type": "application/json" } : undefined,
     });
   } catch {
@@ -30,9 +30,10 @@ const path = (cid: string, sid: string) => `${inputPath(cid)}/${encodeURICompone
 export const inputsApi = {
   list: (cid: string) => call(inputPath(cid), z.array(inputSessionSchema)),
   get: (cid: string, sid: string) => call(path(cid, sid), inputSessionSchema),
-  create: (cid: string, input_mode: InputSession["input_mode"], sample_rate: number) => call(
+  create: (cid: string, input_mode: InputSession["input_mode"], sample_rate: number,
+    channels = 1, processing_mode: InputSession["processing_mode"] = "speech_stream") => call(
     inputPath(cid), inputSessionSchema, "POST", JSON.stringify({
-      input_mode, sample_rate, channels: 1, encoding: "pcm_s16le",
+      input_mode, sample_rate, channels, processing_mode, encoding: "pcm_s16le",
     }),
   ),
   frame: (cid: string, sid: string, frame: InputFrame) => call(

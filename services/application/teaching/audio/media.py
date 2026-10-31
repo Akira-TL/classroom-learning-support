@@ -3,6 +3,7 @@
 import io
 import sqlite3
 import wave
+from collections.abc import Callable
 from contextlib import closing
 from pathlib import Path
 from uuid import uuid4
@@ -35,7 +36,8 @@ class AudioStore:
             )
 
     def save(
-        self, classroom_id: str, session_id: str, content: bytes, *, source: str = "teacher_uploaded_audio"
+        self, classroom_id: str, session_id: str, content: bytes, *, source: str = "teacher_uploaded_audio",
+        validate_in_transaction: Callable[[sqlite3.Connection, AudioAsset], None] | None = None,
     ) -> AudioAsset:
         if not content or len(content) > self.max_bytes:
             raise StoreError(413, "音频为空或超过20MB")
@@ -61,6 +63,7 @@ class AudioStore:
         )
         path = self.root / f"{asset.id}.wav"
         with closing(sqlite3.connect(self.database_path, timeout=10)) as db, db:
+            db.row_factory = sqlite3.Row
             db.execute("BEGIN IMMEDIATE")
             if not db.execute("SELECT 1 FROM classrooms WHERE id=?", (classroom_id,)).fetchone():
                 raise StoreError(410, "课堂已删除，音频未归档")
@@ -68,6 +71,8 @@ class AudioStore:
                 "SELECT 1 FROM audio_assets WHERE classroom_id=? AND session_id=?", (classroom_id, session_id)
             ).fetchone():
                 raise StoreError(409, "会话已归档原音频，不允许覆盖；请创建新会话")
+            if validate_in_transaction is not None:
+                validate_in_transaction(db, asset)
             try:
                 path.write_bytes(content)
                 db.execute(

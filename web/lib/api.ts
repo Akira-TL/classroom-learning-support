@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { classroomSchema, userSchema } from "./types";
 import type { ClassroomContent } from "./types";
+import type { DemoRole } from "./types";
 
 const errorSchema = z.object({
   detail: z.union([
@@ -53,8 +54,9 @@ export async function request<T>(
 
 export const api = {
   me: () => request("/auth/me", userSchema),
-  login: (username: string, password: string) => request(
-    "/auth/login", userSchema, "POST", JSON.stringify({ username, password }),
+  demoLogin: (role: DemoRole, studentId?: string) => request(
+    "/auth/demo-login", userSchema, "POST", JSON.stringify({ role,
+      ...(role === "student" ? { student_id: studentId ?? "student-01" } : {}) }),
   ),
   logout: () => request("/auth/logout", z.undefined(), "POST"),
   classrooms: () => request("/classrooms", z.array(classroomSchema)),

@@ -1,17 +1,19 @@
 import { z } from "zod";
 import { request } from "./api";
+import { nativeEventSchema } from "./speech/native";
 
 export const reviewStateSchema = z.enum(["pending", "confirmed", "unable"]);
 const sourceSchema = z.enum(["synthetic", "recorded_result", "upstream_live"]);
 export const speechEventSchema = z.object({
   protocol_version: z.literal("app-draft-1"), session_id: z.string(), event_id: z.string(),
   sequence: z.number().int().nonnegative(),
-  event_type: z.enum(["partial", "final", "revision", "withdraw", "status", "end"]),
+  event_type: z.enum(["partial", "final", "revision", "withdraw", "status", "end", "metadata"]),
   source_kind: sourceSchema, segment_id: z.string().nullable(), revision: z.number().int().positive(),
   start_ms: z.number().nonnegative(), end_ms: z.number().nonnegative(), text: z.string().nullable(),
   source_ref: z.string().nullable(), overlap: z.boolean(),
   status: z.enum(["running", "paused", "disconnected", "ended"]).nullable(),
   gap_start_ms: z.number().nullable(), gap_end_ms: z.number().nullable(),
+  native_event: nativeEventSchema.nullable().optional(),
 });
 export const utteranceSchema = z.object({
   session_id: z.string(), segment_id: z.string(), revision: z.number().int(), sequence: z.number().int(),
@@ -21,6 +23,7 @@ export const utteranceSchema = z.object({
   teacher_text: z.string().nullable(), student_alias: z.string().nullable(), question_id: z.string().nullable(),
   text_review: reviewStateSchema, identity_review: reviewStateSchema, question_review: reviewStateSchema,
   reviewed_by: z.string().nullable(), audio_available: z.boolean(),
+  native_event: nativeEventSchema.nullable().optional(),
 });
 export type SpeechEvent = z.infer<typeof speechEventSchema>;
 export type Utterance = z.infer<typeof utteranceSchema>;

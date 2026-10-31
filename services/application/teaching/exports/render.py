@@ -48,7 +48,8 @@ def render_report(metadata: ExportMetadata, source: ExportSources) -> str:
     return (
         '<!doctype html><html lang="zh-CN"><head><meta charset="utf-8">'
         '<meta name="viewport" content="width=device-width,initial-scale=1"><title>教师教学支持报告</title>'
-        "<style>body{font-family:system-ui,sans-serif;max-width:850px;margin:32px auto;padding:0 24px;line-height:1.7}"
+        "<style>body{font-family:system-ui,sans-serif;max-width:850px;margin:32px auto;"
+        "padding:0 24px;line-height:1.7;overflow-wrap:anywhere}"
         "p{white-space:pre-wrap}h1{font-size:26px}h2{font-size:19px}section{break-inside:avoid}"
         "@media print{body{margin:0;max-width:none}a{overflow-wrap:anywhere}}</style></head><body>"
         "<h1>教师教学支持报告</h1>"

@@ -7,6 +7,7 @@ from fastapi.responses import FileResponse
 
 from ..classroom.auth import User, require_teacher
 from ..classroom.storage import SQLiteStore, StoreError
+from ..integration.tracks import fetch_track
 from ..models import StrictModel
 from .media import AudioAsset, AudioStore
 from .models import ReviewRequest, SpeechEvent, Utterance
@@ -51,7 +52,7 @@ def speech_router(classroom_store: SQLiteStore, speech_store: SpeechStore) -> AP
             except StoreError as error:
                 if error.status != 404:
                     raise
-                available = False
+                available = bool(item.native_event and item.native_event.audio_ref)
             result.append(item.model_copy(update={"audio_available": available}))
         return result
 
@@ -116,5 +117,17 @@ def speech_router(classroom_store: SQLiteStore, speech_store: SpeechStore) -> AP
         if item.end_ms > asset.duration_ms:
             raise HTTPException(409, "发言时间超出已归档音频范围，需核对时间基准")
         return FileResponse(path, media_type="audio/wav", headers={"Cache-Control": "no-store"})
+
+    @router.get("/{session_id}/{segment_id}/tracks/{ref_id}", response_model=None)
+    def track(
+        classroom_id: str, session_id: str, segment_id: str, ref_id: str,
+        user: Annotated[User, Depends(require_teacher)],
+    ) -> Response:
+        classroom_store.get_classroom(user.id, classroom_id)
+        item = next((item for item in speech_store.timeline(classroom_id)
+                     if item.session_id == session_id and item.segment_id == segment_id), None)
+        if not item or not item.native_event or not any(ref.id == ref_id for ref in item.native_event.audio_ref):
+            raise HTTPException(404, "该课堂发言未引用此音轨")
+        return fetch_track(session_id, ref_id)
 
     return router

@@ -75,6 +75,11 @@ def test_export_is_self_contained_escaped_and_idempotent(exports: Exports) -> No
     response = env.client.get(f"/api/exports/{result.id}/download")
     assert response.status_code == 200
     assert response.headers["content-disposition"].startswith("attachment;")
+    policy = response.headers["content-security-policy"]
+    sandbox = next(part.strip().split() for part in policy.split(";") if part.strip().startswith("sandbox"))
+    assert "allow-downloads" in sandbox
+    assert "allow-scripts" not in sandbox and "allow-same-origin" not in sandbox
+    assert "default-src 'none'" in policy
     assert "<script>" not in response.text
     assert "&lt;script&gt;" in response.text
     assert 'src="http' not in response.text
