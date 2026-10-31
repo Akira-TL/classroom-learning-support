@@ -27,7 +27,6 @@
 .metrics th, .metrics td { border-bottom: 1px solid #e7edf4; padding: 9px; text-align: left; }
 .actions { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
 .reader { margin: 24px 0; }
-.reader article { border-top: 1px solid #e5ebf3; padding: 14px 0; }
 @media (max-width: 900px) {
   .layout { grid-template-columns: 160px minmax(0,1fr); } .periods { grid-template-columns: 1fr; }
 }
