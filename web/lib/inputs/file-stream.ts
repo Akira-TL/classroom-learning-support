@@ -33,6 +33,8 @@ export class FileStream {
         const count = Math.min(Math.round(this.wav.sampleRate / 4), this.wav.samples - this.cursor);
         await this.wait(this.origin + (this.cursor + count) / this.wav.sampleRate * 1000 - performance.now());
         if (this.stopping || this.paused) break;
+        // 超期从实际发送时刻顺延，确认耗时不重复加入下一帧；慢网络后也不突发追赶。
+        this.origin = Math.max(this.origin, performance.now() - (this.cursor + count) / this.wav.sampleRate * 1000);
         const next = await inputsApi.frame(this.cid, this.session.id, {
           sequence: this.session.expected_sequence, start_sample: this.cursor, frame_count: count,
           pcm_base64: encodePcm(this.wav.pcm.subarray(
@@ -41,7 +43,6 @@ export class FileStream {
         });
         if (next.received_samples !== this.cursor + count) throw new Error("服务端确认样本游标异常，已停止发送。");
         this.cursor += count; this.session = next; this.callbacks.session(next);
-        this.origin = Math.max(this.origin, performance.now() - this.cursor / this.wav.sampleRate * 1000);
       }
       if (!this.stopping && this.cursor === this.wav.samples) await this.finish(false);
     } catch (failure) {
