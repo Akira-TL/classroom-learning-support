@@ -37,7 +37,9 @@ def exports_router(classroom_store: SQLiteStore) -> APIRouter:
             media_type="text/html",
             headers={
                 "Content-Disposition": f'attachment; filename="teacher-report-{export_id}.html"',
-                "Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'",
+                "Content-Security-Policy": (
+                    "sandbox allow-downloads; default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'"
+                ),
                 "X-Content-Type-Options": "nosniff",
             },
         )
