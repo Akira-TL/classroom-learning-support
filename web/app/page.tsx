@@ -127,7 +127,8 @@ export default function Home() {
             onClick={() => setRecipientView("learning")}>学习反馈</button>
         </nav>
         <div className="recipient-pane" hidden={recipientView !== "status"}>
-          <CareReader key={`care-${user.id}`} audience={user.role} studentId={user.student_id ?? ""} /></div>
+          <CareReader key={`care-${user.id}`} audience={user.role} studentId={user.student_id ?? ""}
+            active={recipientView === "status"} /></div>
         <div className="recipient-pane" hidden={recipientView !== "learning"}>
           {user.role === "student" ? <StudentReader key={user.id} /> : <ParentReader key={user.id} />}
         </div>
