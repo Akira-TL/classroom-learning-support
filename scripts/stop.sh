@@ -2,7 +2,9 @@
 set -euo pipefail
 # Windows 本机服务：只停止命令行符合本项目的监听进程。
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)"
-export CLASSROOM_WORKSPACE="$(cygpath -w "$ROOT")"
+if (( $# > 1 )); then echo "用法：stop.sh [项目原目录]" >&2; exit 2; fi
+STOP_ROOT="$(cd -- "${1:-$ROOT}" && pwd)"
+export CLASSROOM_WORKSPACE="$(cygpath -w "$STOP_ROOT")"
 powershell.exe -NoProfile -Command '
   $workspace = $env:CLASSROOM_WORKSPACE
   foreach ($port in @(8000, 3000)) {

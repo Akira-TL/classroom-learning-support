@@ -1,7 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 ROOT="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../../.." && pwd)"
-export CLASSROOM_SPEECH_ROOT="$(cygpath -w "$ROOT/services/speech")"
+if (( $# > 1 )); then echo "用法：stop.sh [项目原目录]" >&2; exit 2; fi
+STOP_ROOT="$(cd -- "${1:-$ROOT}" && pwd)"
+export CLASSROOM_SPEECH_ROOT="$(cygpath -w "$STOP_ROOT/services/speech")"
 export CLASSROOM_SPEECH_PORT="${SPEECH_PORT:-8765}"
 powershell.exe -NoProfile -Command '
   $listeners = Get-NetTCPConnection -LocalPort $env:CLASSROOM_SPEECH_PORT -State Listen -ErrorAction SilentlyContinue
