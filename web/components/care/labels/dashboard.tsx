@@ -30,7 +30,7 @@ export function LabelDashboard({ classroom, student, active }: {
   const request = { student_id: student, ...periods };
   const current = comparison && sameComparisonScope(comparison.periods, request) ? comparison : null;
   const sourceKey = [...current?.baseline ?? [], ...current?.current ?? []]
-    .map((batch) => `${batch.id}/${batch.revision}`).join(";");
+    .map((batch) => `${batch.id}/${batch.revision}/${batch.audio_asset?.id ?? "no-audio"}`).join(";");
   useEffect(() => {
     setExplanation(null); setReportError("");
     if (!active || !sourceKey) { setGenerating(false); return; }
@@ -83,9 +83,9 @@ export function LabelDashboard({ classroom, student, active }: {
       <p>提供上周与本周的标签、时间戳和对应会话后，这里将显示次数与时间分布。尚无数据不表示零次。</p></section>}
     <div className={styles.periods}>
       <LabelPeriod title="上周时间分布" batches={current?.baseline ?? []} active={active}
-        allowAudio={perspective !== "teaching_director"} />
+        allowAudio={perspective !== "teaching_director"} onSaved={() => setRefresh((value) => value + 1)} />
       <LabelPeriod title="本周时间分布" batches={current?.current ?? []} active={active}
-        allowAudio={perspective !== "teaching_director"} />
+        allowAudio={perspective !== "teaching_director"} onSaved={() => setRefresh((value) => value + 1)} />
     </div>
     {current?.notes.map((note, index) => <p className={common.muted} key={index}>{note}</p>)}
     {generating && <section className={common.card}><p role="status">正在根据当前标签自动生成解释…</p></section>}

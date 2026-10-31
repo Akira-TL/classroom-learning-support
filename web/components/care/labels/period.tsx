@@ -1,39 +1,19 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { speech, type Utterance } from "../../../lib/speech";
+import { useState } from "react";
 import { tagNames, type TagBatch, type TagValue } from "../../../lib/care/labels/types";
-import { AudioPanel } from "../../audio-panel";
+import { BatchAudio } from "./audio";
 import { timeLabel } from "../../workspace/types";
 import styles from "./labels.module.css";
 
-function TagAudio({ batch, tag, active }: { batch: TagBatch; tag: TagValue; active: boolean }) {
-  const [source, setSource] = useState<Utterance | null>(null);
-  const [message, setMessage] = useState("");
-  useEffect(() => {
-    let cancelled = false; setSource(null); setMessage("");
-    speech.timeline(batch.classroom_id).then((items) => {
-      if (cancelled) return;
-      const item = items.find((entry) => entry.session_id === batch.session_id
-        && entry.start_ms < tag.end_ms && entry.end_ms > tag.start_ms);
-      if (item) setSource({ ...item, start_ms: Math.max(item.start_ms, tag.start_ms),
-        end_ms: Math.min(item.end_ms, tag.end_ms) });
-      else setMessage("该时间段尚无已接入的对应音频转写片段，请补齐同一会话的音频与转写数据。");
-    }).catch((failure: unknown) => {
-      if (!cancelled) setMessage(failure instanceof Error ? failure.message : "来源读取失败。");
-    });
-    return () => { cancelled = true; };
-  }, [batch.classroom_id, batch.session_id, tag.start_ms, tag.end_ms]);
-  return <div className={styles.audio}>{source ? <>
-    <p>对应转写：{source.teacher_text ?? (source.upstream_text || "该片段没有识别文字")}</p>
-    <AudioPanel classroomId={batch.classroom_id} utterance={source} active={active} onSaved={async () => {}} />
-  </> : <p role="status">{message || "正在定位对应片段…"}</p>}</div>;
-}
-
-export function LabelPeriod({ title, batches, active, allowAudio }: {
-  title: string; batches: TagBatch[]; active: boolean; allowAudio: boolean;
+export function LabelPeriod({ title, batches, active, allowAudio, onSaved }: {
+  title: string; batches: TagBatch[]; active: boolean; allowAudio: boolean; onSaved: () => void;
 }) {
   const [selected, setSelected] = useState("");
+  const [range, setRange] = useState<{ start: number; end: number } | null>(null);
+  function select(batch: TagBatch, tag: TagValue) {
+    setSelected(`${batch.id}/${tag.tag_id}`); setRange({ start: tag.start_ms, end: tag.end_ms });
+  }
   return <section className={styles.period}><h3>{title}</h3>
     {batches.length === 0 && <p>尚未导入该时段标签，不能记为零次。</p>}
     {batches.map((batch) => {
@@ -48,25 +28,29 @@ export function LabelPeriod({ title, batches, active, allowAudio }: {
         <div className={styles.timeline} aria-label={`${title}标签时间分布`}>
           {batch.tags.map((tag) => <button key={tag.tag_id} type="button"
             aria-label={`${tag.original_label} ${timeLabel(tag.start_ms)}至${timeLabel(tag.end_ms)}`}
-            title={`${tag.original_label} · ${tag.count}次`} onClick={() => setSelected(`${batch.id}/${tag.tag_id}`)}
+            title={`${tag.original_label} · ${tag.count}次`} onClick={() => select(batch, tag)}
             style={{ left: `${tag.start_ms / extent * 100}%`,
               width: `${Math.max(.8,(tag.end_ms - tag.start_ms) / extent * 100)}%` }} />)}
         </div>
         <div className={styles.times}><span>00:00</span><span>{timeLabel(extent)}</span></div>
         {batch.tags.map((tag) => <div key={tag.tag_id} className={styles.tag}>
           <button type="button" aria-pressed={selected === `${batch.id}/${tag.tag_id}`}
-            onClick={() => setSelected(`${batch.id}/${tag.tag_id}`)}>{tagNames[tag.label]} · {tag.count} 次 ·
+            onClick={() => select(batch, tag)}>{tagNames[tag.label]} · {tag.count} 次 ·
             {timeLabel(tag.start_ms)}—{timeLabel(tag.end_ms)}</button>
           {tag.category === "external_state" && <p>外部状态标签，来源待核实；声音本身不能证明{tag.original_label}。</p>}
           {tag.note && <p>{tag.note}</p>}
           {selected === `${batch.id}/${tag.tag_id}` && <>
             {allowAudio && batch.transcripts.filter((line) => line.start_ms < tag.end_ms
               && line.end_ms > tag.start_ms).map((line, index) => <blockquote key={index}>
-                提供的转写：{line.text}</blockquote>)}
-            {allowAudio ? <TagAudio batch={batch} tag={tag} active={active} /> : <p>汇总视角不展示个人音频。</p>}
+                <button type="button" onClick={() => setRange({ start: line.start_ms, end: line.end_ms })}>
+                  {timeLabel(line.start_ms)}—{timeLabel(line.end_ms)} · {line.text}</button></blockquote>)}
+            {allowAudio ? <BatchAudio batch={batch} startMs={range?.start ?? tag.start_ms}
+              endMs={range?.end ?? tag.end_ms} active={active} onSaved={onSaved} />
+              : <p>汇总视角不展示个人音频。</p>}
           </>}
         </div>)}
       </article>;
     })}
   </section>;
 }
+

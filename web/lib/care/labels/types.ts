@@ -24,8 +24,11 @@ export const tagImportSchema = z.object({ import_id: z.string().min(1).max(100),
   tags: z.array(tagSchema).min(1).max(500),
   transcripts: z.array(z.object({ start_ms: z.number().int().nonnegative(), end_ms: z.number().int().positive(),
     text: z.string() }).strict()).default([]) }).strict();
+export const batchAudioAssetSchema = z.object({ id: z.string(), session_id: z.string(),
+  duration_ms: z.number().positive(), channels: z.number().int(), sample_rate: z.number().int(), source: z.string() });
+export type BatchAudioAsset = z.infer<typeof batchAudioAssetSchema>;
 export const tagBatchSchema = tagImportSchema.extend({ id: z.string(), classroom_id: z.string(),
-  teacher_id: z.string(), revision: z.number() });
+  teacher_id: z.string(), revision: z.number(), audio_asset: batchAudioAssetSchema.nullable().default(null) });
 export const tagComparisonSchema = z.object({ periods: comparisonRequestSchema,
   baseline: z.array(tagBatchSchema), current: z.array(tagBatchSchema), notes: z.array(z.string()),
   summaries: z.array(z.object({ label: tagLabelSchema, baseline_count: z.number().nullable(),
