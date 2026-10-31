@@ -56,6 +56,14 @@ class TagStore:
                     raise StoreError(409, "同一课堂、学生和采集会话已有标注，请用PUT更新原记录，不能重复累计次数或时长")
             record = TagBatch(**payload.model_dump(), id=identity or uuid4().hex, classroom_id=cid, teacher_id=teacher,
                               revision=previous.revision + 1 if previous else 1)
+            if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audio_assets'").fetchone():
+                asset = self.audio_asset(db, record)
+                if asset is not None:
+                    if any(tag.end_ms > asset.duration_ms for tag in record.tags) or any(
+                        item.end_ms > asset.duration_ms for item in record.transcripts
+                    ):
+                        raise StoreError(422, "标签或转写时间超出已归档音频时长，请核对会话与时间基准")
+                    record = record.model_copy(update={"audio_asset": asset})
             db.execute("INSERT OR REPLACE INTO care_tag_batches VALUES (?,?,?,?)",
                        (record.id, cid, teacher, record.model_dump_json()))
             return record
