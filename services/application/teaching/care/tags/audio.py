@@ -1,7 +1,6 @@
 """外部标签批次绑定原始音频，无须存在转写发言。"""
 
-import io
-import wave
+import sqlite3
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
@@ -18,13 +17,16 @@ def batch_audio_router(classrooms: SQLiteStore) -> APIRouter:
     tags, audio = TagStore(classrooms), AudioStore(classrooms.path)
     router = APIRouter(prefix="/classrooms/{cid}/care/tag-batches", tags=["标签来源音频"])
 
+    def require_batch(db: sqlite3.Connection, cid: str, bid: str, teacher: str) -> TagBatch:
+        records = tags.listing(db, teacher, cid)
+        record = next((item for item in records if item.id == bid), None)
+        if record is None:
+            raise StoreError(404, "标签批次不存在")
+        return record
+
     def batch(cid: str, bid: str, teacher: str) -> TagBatch:
         with classrooms.connection() as db:
-            records = tags.listing(db, teacher, cid)
-            record = next((item for item in records if item.id == bid), None)
-            if record is None:
-                raise StoreError(404, "标签批次不存在")
-            return record
+            return require_batch(db, cid, bid, teacher)
 
     @router.post("/{bid}/audio", response_model=AudioAsset)
     async def upload(cid: str, bid: str, request: Request,
@@ -37,20 +39,19 @@ def batch_audio_router(classrooms: SQLiteStore) -> APIRouter:
             if len(content) + len(block) > audio.max_bytes:
                 raise HTTPException(413, "音频超过20MB")
             content.extend(block)
-        try:
-            with wave.open(io.BytesIO(content), "rb") as wav:
-                duration_ms = wav.getnframes() * 1000 // wav.getframerate()
-        except (wave.Error, EOFError, ZeroDivisionError):
-            raise HTTPException(422, "音频不是有效的PCM WAV") from None
-        latest = batch(cid, bid, user.id)
-        if latest.revision != record.revision or latest.session_id != record.session_id:
-            raise HTTPException(409, "上传期间标签来源已变化，请刷新后重试")
-        if any(tag.end_ms > duration_ms for tag in latest.tags) or any(
-            item.end_ms > duration_ms for item in latest.transcripts
-        ):
-            raise HTTPException(422, "标签或转写时间超出音频时长，请核对源文件与时间基准")
+        def validate(db: sqlite3.Connection, asset: AudioAsset) -> None:
+            # 使用归档持有的写事务；重读后直到文件与绑定提交，其他PUT不能插入其间。
+            latest = require_batch(db, cid, bid, user.id)
+            if latest.revision != record.revision or latest.session_id != record.session_id:
+                raise StoreError(409, "上传期间标签来源已变化，请刷新后重试")
+            if any(tag.end_ms > asset.duration_ms for tag in latest.tags) or any(
+                item.end_ms > asset.duration_ms for item in latest.transcripts
+            ):
+                raise StoreError(422, "标签或转写时间超出音频时长，请核对源文件与时间基准")
+
         # AudioStore 使用课堂和会话唯一键，拒绝原声覆盖；修改源文件须创建新会话与来源版本。
-        return audio.save(cid, record.session_id, bytes(content), source="provided_tag_batch_audio")
+        return audio.save(cid, record.session_id, bytes(content), source="provided_tag_batch_audio",
+                          validate_in_transaction=validate)
 
     @router.get("/{bid}/audio", response_model=None)
     def original(cid: str, bid: str, user: Annotated[User, Depends(require_teacher)]) -> FileResponse:
