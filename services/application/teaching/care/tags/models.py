@@ -3,6 +3,7 @@ from typing import Literal, Self
 
 from pydantic import Field, model_validator
 
+from ...audio.media import AudioAsset
 from ...models import StrictModel
 from ..models import CompareRequest
 
@@ -75,6 +76,7 @@ class TagBatch(TagImport):
     classroom_id: str
     teacher_id: str
     revision: int = 1
+    audio_asset: AudioAsset | None = None
 
 
 class TagSummary(StrictModel):

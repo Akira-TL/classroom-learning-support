@@ -1,6 +1,7 @@
 import sqlite3
 from uuid import uuid4
 
+from ...audio.media import AudioAsset
 from ...classroom.storage import SQLiteStore, StoreError
 from .models import TagBatch, TagImport
 
@@ -17,8 +18,17 @@ class TagStore:
             self.store._authorized(db, teacher, cid)
         rows = db.execute("SELECT b.body FROM care_tag_batches b JOIN classrooms c ON c.id=b.classroom_id "
                           "WHERE b.teacher_id=?", (teacher,)).fetchall()
-        return [item for row in rows if (item := TagBatch.model_validate_json(row[0]))
-                and (cid is None or item.classroom_id == cid)]
+        result = [item for row in rows if (item := TagBatch.model_validate_json(row[0]))
+                  and (cid is None or item.classroom_id == cid)]
+        if db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name='audio_assets'").fetchone():
+            result = [item.model_copy(update={"audio_asset": self.audio_asset(db, item)}) for item in result]
+        return result
+
+    @staticmethod
+    def audio_asset(db: sqlite3.Connection, batch: TagBatch) -> AudioAsset | None:
+        row = db.execute("SELECT body FROM audio_assets WHERE classroom_id=? AND session_id=?",
+                         (batch.classroom_id, batch.session_id)).fetchone()
+        return AudioAsset.model_validate_json(row[0]) if row else None
 
     def save(self, cid: str, teacher: str, request: TagImport,
              identity: str | None = None, expected_revision: int | None = None) -> TagBatch:

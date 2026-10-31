@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends
 from ...classroom.auth import User, require_teacher
 from ...classroom.storage import SQLiteStore
 from ..models import CompareRequest
+from .audio import batch_audio_router
 from .compare import compare_tags
 from .models import TagBatch, TagComparison, TagImport, TagUpdate
 from .store import TagStore
@@ -13,6 +14,7 @@ from .store import TagStore
 def tag_router(classrooms: SQLiteStore) -> APIRouter:
     store = TagStore(classrooms)
     router = APIRouter(prefix="/api", tags=["外部行为声音标注"])
+    router.include_router(batch_audio_router(classrooms))
 
     @router.get("/classrooms/{cid}/care/tag-batches", response_model=list[TagBatch])
     def listing(cid: str, user: Annotated[User, Depends(require_teacher)]) -> list[TagBatch]:
