@@ -1,0 +1,35 @@
+{
+  "data_origin": "simulated",
+  "note": "espeak-ng 合成语音 + 模拟教室混响与风扇噪声，非真实课堂",
+  "snr_db": 5,
+  "lines": [
+    {
+      "speaker": "教师",
+      "azimuth_deg": 0,
+      "start_s": 0.5,
+      "end_s": 3.68,
+      "text": "每块是四分之一吗？"
+    },
+    {
+      "speaker": "学生甲",
+      "azimuth_deg": -40,
+      "start_s": 4.48,
+      "end_s": 8.13,
+      "text": "有四块就是四分之一。"
+    },
+    {
+      "speaker": "学生乙",
+      "azimuth_deg": 35,
+      "start_s": 6.53,
+      "end_s": 10.17,
+      "text": "不对，要分得一样大。"
+    },
+    {
+      "speaker": "学生甲",
+      "azimuth_deg": -40,
+      "start_s": 11.17,
+      "end_s": 14.26,
+      "text": "那它没有平均分。"
+    }
+  ]
+}
