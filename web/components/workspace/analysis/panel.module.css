@@ -2,6 +2,7 @@
 .full { display: block; }
 .left, .right { min-width: 0; }
 .left { display: grid; gap: 16px; }
+.left[hidden] { display: none; }
 .media, .markers, .right { background: #fff; border: 1px solid #dfe5ee; border-radius: 9px; }
 .media { padding: 15px; }
 .slide { position: relative; min-height: 335px; overflow: hidden; padding: 30px 35px 22px;
