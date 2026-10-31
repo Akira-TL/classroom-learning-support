@@ -10,8 +10,12 @@ import { ExercisePanel } from "./exercises/panel";
 import { PlanPanel } from "./plans/panel";
 import { ManualEvidencePanel } from "./manual-evidence/panel";
 import { PublishPanel } from "./reports/publish-panel";
+import type { WorkspaceView } from "./workspace/types";
+import styles from "./workspace/workspace.module.css";
 
-export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; utterance: Utterance }) {
+export function EvidencePanel({ classroom, utterance, view = "review" }: {
+  classroom: Classroom; utterance: Utterance; view?: WorkspaceView;
+}) {
   const [results, setResults] = useState<GenerationResult[]>([]);
   const [attempt, setAttempt] = useState<GenerateEvidence | null>(null);
   const [busy, setBusy] = useState(false);
@@ -76,7 +80,8 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
       ? mergeResult(result, { ...result, evidence: updated }) : result));
   }
 
-  return <section aria-label="学习证据分析">
+  return <section aria-label="学习证据分析" className={view === "review" ? styles.card : undefined}>
+    <div hidden={view !== "review"}>
     <h4>学习证据</h4>
     <p>点击生成才会调用 DeepSeek 云端；仅发送必要的匿名教学文本，输出仍需教师判断。</p>
     {!verified && <p>请先完成文字、身份和题目的分别核验；临时、撤回或无法判断的发言不能生成个人证据。</p>}
@@ -92,6 +97,7 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
     {attempt && <p>当前请求依据发言版本 {attempt.expected_version}。
       {attempt.expected_version !== utterance.version && "发言已更新；重试旧请求不会改用新版本，需明确重新生成。"}</p>}
     <ManualEvidencePanel classroomId={classroom.id} utterance={utterance} onSaved={refresh} />
+    </div>
     {!loading && results.length === 0 && <p>本发言尚无生成或人工录入任务。</p>}
     {results.map((result) => <article key={result.task.id}>
       <p>任务 {result.task.id}：{result.task.origin === "teacher_manual"
@@ -105,10 +111,18 @@ export function EvidencePanel({ classroom, utterance }: { classroom: Classroom; 
         <p>{result.task.discarded_draft.content.interpretation}</p>
       </details>}
       {result.evidence ? <>
-        <EvidenceReview classroomId={classroom.id} record={result.evidence} onSaved={updateRecord} />
-        <PublishPanel classroomId={classroom.id} evidence={result.evidence} />
-        <ExercisePanel classroomId={classroom.id} evidence={result.evidence} />
-        <PlanPanel classroomId={classroom.id} evidence={result.evidence} />
+        <div hidden={view !== "review"}>
+          <EvidenceReview classroomId={classroom.id} record={result.evidence} onSaved={updateRecord} />
+        </div>
+        <div hidden={view !== "publishing"}>
+          <PublishPanel classroomId={classroom.id} evidence={result.evidence} />
+        </div>
+        <div hidden={view === "review"}>
+          <ExercisePanel classroomId={classroom.id} evidence={result.evidence}
+            view={view === "publishing" ? "publishing" : "teaching"} />
+          <PlanPanel classroomId={classroom.id} evidence={result.evidence}
+            view={view === "publishing" ? "publishing" : "teaching"} />
+        </div>
       </> : <p>此任务没有可供确认的证据记录。</p>}
     </article>)}
   </section>;
