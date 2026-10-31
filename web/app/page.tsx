@@ -30,6 +30,11 @@ export default function Home() {
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
 
+  function navigateView(nextView: string) {
+    setView(nextView);
+    window.scrollTo({ top: 0, behavior: "auto" });
+  }
+
   function report(failure: unknown) {
     if (failure instanceof ApiError && failure.status === 401) {
       setUser(null); setClassrooms([]); setSelected(null); setFormOpen(false);
@@ -91,7 +96,7 @@ export default function Home() {
   }
 
   return <Shell user={user} activeView={user?.role === "teacher" ? view : user?.role ?? "classrooms"}
-    onNavigate={setView} actions={user && <>
+    onNavigate={navigateView} actions={user && <>
       {user.role === "teacher" && selected && <>
         <span className="badge badge-warning">真实语音服务尚待联调</span>
         <button disabled={busy} onClick={() => openForm(selected)}>修改课堂</button>
@@ -114,7 +119,7 @@ export default function Home() {
       : user.role === "student" ? <StudentReader key={user.id} />
         : user.role === "parent" ? <ParentReader key={user.id} />
           : user.role === "admin" ? <AdminOverview key={user.id} />
-            : <TeacherHome key={user.id} view={view} onView={setView} classrooms={classrooms}
+            : <TeacherHome key={user.id} view={view} onView={navigateView} classrooms={classrooms}
               selected={selected} formOpen={formOpen} formKey={formKey} busy={busy}
               onForm={openForm} onSave={save} onCancel={() => setFormOpen(false)} onRemoved={removed}
               onRefresh={() => perform(async () => {
