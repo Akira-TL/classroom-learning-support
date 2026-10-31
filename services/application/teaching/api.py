@@ -9,6 +9,7 @@ from starlette.middleware.base import RequestResponseEndpoint
 
 from .audio.api import speech_router
 from .audio.store import SpeechStore
+from .care.api import care_router
 from .classroom.auth import COOKIE_NAME, AuthSettings, DemoAuth, LoginRequest, User, current_user, require_teacher
 from .classroom.classrooms import Classroom, CreateClassroom, UpdateClassroom
 from .classroom.storage import SQLiteStore, StoreError
@@ -48,6 +49,7 @@ def create_app(database_path: Path, settings: AuthSettings | None = None) -> Fas
     app.include_router(manual_exercises_router(store))
     app.include_router(inputs_router(store))
     app.include_router(speech_ingest_router(store, speech))
+    app.include_router(care_router(store))
 
     @app.middleware("http")
     async def check_origin(request: Request, call_next: RequestResponseEndpoint) -> Response:

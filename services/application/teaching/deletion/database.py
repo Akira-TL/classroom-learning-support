@@ -3,6 +3,8 @@ import sqlite3
 from .models import Resource
 
 DIRECT_TABLES = (
+    "care_observations",
+    "care_reports",
     "audio_assets",
     "input_frames",
     "input_sessions",
