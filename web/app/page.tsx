@@ -11,7 +11,7 @@ import { AdminOverview } from "../components/overview/panel";
 import { CareReader } from "../components/care/reader";
 import { selectionAfterRemoval } from "../lib/deletion/attempts";
 import { ApiError, api } from "../lib/api";
-import type { Classroom, ClassroomContent, User } from "../lib/types";
+import type { Classroom, ClassroomContent, DemoRole, User } from "../lib/types";
 
 export default function Home() {
   const [view, setView] = useState("classrooms");
@@ -63,12 +63,12 @@ export default function Home() {
     try { await action(); } catch (failure) { report(failure); } finally { setBusy(false); }
   }
 
-  async function login(username: string, password: string) {
+  async function login(role: DemoRole, studentId?: string) {
     await perform(async () => {
-      const current = await api.login(username, password);
-      setUser(current);
+      const current = await api.demoLogin(role, studentId);
+      setUser(current); setSelected(null); setFormOpen(false); setView("classrooms");
       setClassrooms(current.role === "teacher" ? await api.classrooms() : []);
-      setNotice("登录成功。账号角色和课堂权限由服务端确定。");
+      setNotice("已进入所选演示角色。");
     });
   }
 
@@ -107,22 +107,23 @@ export default function Home() {
       })}>检查当前会话</button>
       <button disabled={busy} onClick={() => void perform(async () => {
         await api.logout(); setUser(null); setClassrooms([]); setSelected(null); setFormOpen(false);
-        setView("classrooms"); setNotice("已退出登录。");
-      })}><AppIcon name="signOut" size={17} />退出登录</button>
+        setView("classrooms"); setNotice("已退出，可重新选择角色。");
+      })}><AppIcon name="signOut" size={17} />退出角色</button>
     </>}>
     {error && <p role="alert">{error}</p>}
     <p className="app-status" role="status" aria-live="polite">{busy ? "正在处理，请稍候…" : notice}</p>
     {!user ? <div className="login-layout"><div className="login-intro">
-      <span className="badge badge-blue">有依据的教学支持</span><h1>从一句课堂表达，<br />接续下一次学习。</h1>
-      <p>核对原话，确认学习证据，再形成练习与教学安排。</p>
-      <p className="muted">当前使用成人模拟资料进行演示，真实语音服务尚待联调。</p>
+      <span className="badge badge-blue">课堂学习支持演示</span><h1>走进课堂，<br />看见每一位学生。</h1>
+      <p>从教室布局进入学生信息，查看声音标签、历史变化与不同角色的解释。</p>
+      <p className="muted">选择角色即可体验。提供的标注与演示样例将在各自来源中说明。</p>
     </div><LoginForm busy={busy} onLogin={login} /></div>
       : user.role === "student" ? <><StudentReader key={user.id} />
         <CareReader key={`care-${user.id}`} audience="student" studentId={user.student_id ?? ""} /></>
         : user.role === "parent" ? <><ParentReader key={user.id} />
           <CareReader key={`care-${user.id}`} audience="parent" studentId={user.student_id ?? ""} /></>
           : user.role === "admin" ? <AdminOverview key={user.id} />
-            : <TeacherHome key={user.id} view={view} onView={navigateView} classrooms={classrooms}
+            : <TeacherHome key={`${user.id}/${user.display_role ?? user.role}`} displayRole={user.display_role}
+              view={view} onView={navigateView} classrooms={classrooms}
               selected={selected} formOpen={formOpen} formKey={formKey} busy={busy}
               onForm={openForm} onSave={save} onCancel={() => setFormOpen(false)} onRemoved={removed}
               onRefresh={() => perform(async () => {

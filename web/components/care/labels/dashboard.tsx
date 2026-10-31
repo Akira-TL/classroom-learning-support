@@ -16,14 +16,14 @@ import styles from "./labels.module.css";
 const dateLabels: Record<string, string> = {
   baseline_start: "上周开始", baseline_end: "上周结束", current_start: "本周开始", current_end: "本周结束",
 };
-export function LabelDashboard({ classroom, student, active }: {
-  classroom: Classroom; student: string; active: boolean;
+export function LabelDashboard({ classroom, student, active, initialPerspective = "teacher" }: {
+  classroom: Classroom; student: string; active: boolean; initialPerspective?: Perspective;
 }) {
   const [periods, setPeriods] = useState(() => weekPeriods(new Date().toLocaleDateString("sv-SE")));
   const [comparison, setComparison] = useState<TagComparison | null>(null);
   const [error, setError] = useState("");
   const [refresh, setRefresh] = useState(0);
-  const [perspective, setPerspective] = useState<Perspective>("teacher");
+  const [perspective, setPerspective] = useState<Perspective>(initialPerspective);
   const [explanation, setExplanation] = useState<AutoExplanation | null>(null);
   const [reportError, setReportError] = useState("");
   const [generating, setGenerating] = useState(false);

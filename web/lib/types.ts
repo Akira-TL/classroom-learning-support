@@ -1,9 +1,13 @@
 import { z } from "zod";
 
+export const demoRoleSchema = z.enum(["teacher", "head_teacher", "student", "parent", "teaching_director"]);
+export type DemoRole = z.infer<typeof demoRoleSchema>;
+
 export const userSchema = z.object({
   id: z.string(),
   role: z.enum(["teacher", "student", "parent", "admin"]),
   student_id: z.string().nullable().optional(),
+  display_role: demoRoleSchema.optional(),
 });
 
 export const questionSchema = z.object({

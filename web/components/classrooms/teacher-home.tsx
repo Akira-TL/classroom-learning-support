@@ -1,6 +1,6 @@
 "use client";
 
-import type { Classroom, ClassroomContent } from "../../lib/types";
+import type { Classroom, ClassroomContent, DemoRole } from "../../lib/types";
 import { ClassroomForm } from "../classroom-form";
 import { AppIcon } from "../chrome/icons";
 import { SpeechPanel } from "../speech-panel";
@@ -12,6 +12,7 @@ import { CarePanel } from "../care/panel";
 import "./teacher-home.css";
 
 interface Props {
+  displayRole?: DemoRole;
   view: string; onView: (view: string) => void; classrooms: Classroom[];
   selected: Classroom | null; formOpen: boolean; formKey: number; busy: boolean;
   onOpen: (id: string) => Promise<void>; onForm: (classroom: Classroom | null) => void;
@@ -49,7 +50,8 @@ export function TeacherHome(props: Props) {
       </details>}
     </section>
     <section hidden={view !== "care"} aria-label="课堂详情工作区">
-      {selected ? <CarePanel key={selected.id} classroom={selected} active={view === "care"} />
+      {selected ? <CarePanel key={selected.id} classroom={selected} active={view === "care"}
+        initialPerspective={props.displayRole === "head_teacher" ? "head_teacher" : "teacher"} />
         : <div className="empty-state"><h1>先选择一堂课</h1><p>选择课堂名单，查看学生观察与跟进。</p>
           <button onClick={() => props.onView("classrooms")}>返回课堂库</button></div>}
     </section>

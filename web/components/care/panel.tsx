@@ -3,11 +3,14 @@
 import { useState } from "react";
 import type { Classroom } from "../../lib/types";
 import { seats } from "../../lib/care/labels/presentation";
+import type { Perspective } from "../../lib/care/labels/types";
 import { LabelDashboard } from "./labels/dashboard";
 import common from "./care.module.css";
 import styles from "./labels/labels.module.css";
 
-export function CarePanel({ classroom, active = true }: { classroom: Classroom; active?: boolean }) {
+export function CarePanel({ classroom, active = true, initialPerspective = "teacher" }: {
+  classroom: Classroom; active?: boolean; initialPerspective?: Perspective;
+}) {
   const [selected, setSelected] = useState("");
   return <section className={common.page} aria-label="课堂详情"><header className={common.heading}>
     <h1>课堂详情</h1><p>{classroom.title} · 点击左侧学生，在右侧查看历史标签、时间分布与对应原声。</p>
@@ -23,6 +26,7 @@ export function CarePanel({ classroom, active = true }: { classroom: Classroom; 
   <div aria-label="学生信息面板">
   {!selected && <section className={common.card}><h2>信息面板</h2><p>选择左侧学生，查看其上周与本周记录。</p></section>}
   {classroom.students.map((student) => <div key={student} hidden={student !== selected}>
-    <LabelDashboard classroom={classroom} student={student} active={active && student === selected} />
+    <LabelDashboard classroom={classroom} student={student} active={active && student === selected}
+      initialPerspective={initialPerspective} />
   </div>)}</div></div></section>;
 }

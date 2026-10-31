@@ -1,0 +1,26 @@
+.card { width: 100%; max-width: 680px; margin: 0 auto; background: #fff; border: 1px solid #dce6f2;
+  border-radius: 16px; padding: 30px; box-shadow: 0 8px 28px #24456b08; }
+.card h2 { font-size: 25px; margin: 10px 0 8px; }
+.badge { color: #2168c8; background: #edf4ff; border-radius: 5px; padding: 4px 9px; font-size: 12px; }
+.intro { color: #75859b; margin-bottom: 24px; font-size: 14px; }
+.roles { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.roles button, .student { min-width: 0; margin: 0; border: 1px solid #dce6f2; border-radius: 10px;
+  background: #f9fbff; text-align: left; color: #213954; padding: 18px; }
+.roles button { display: flex; flex-direction: column; align-items: flex-start; gap: 8px; }
+.roles button:hover:not(:disabled) { border-color: #77a9eb; background: #edf5ff; }
+.roles button strong { font-size: 18px; }
+.roles button span { font-size: 12px; color: #71839b; }
+.roles button:focus-visible { outline: 3px solid #276fdd; outline-offset: 3px; }
+.roles button svg { color: #216bd2; }
+.student { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; align-items: center; }
+.student h3 { margin: 0 0 6px; font-size: 18px; }
+.student p { margin: 0; font-size: 12px; color: #71839b; }
+.student label { margin: 0; font-size: 13px; color: #60748f; }
+.student select { display: block; width: 100%; margin: 5px 0 10px; padding: 8px; border: 1px solid #cbd9eb;
+  border-radius: 6px; font: inherit; background: #fff; }
+.student button { width: 100%; min-height: 34px; padding: 9px 14px; color: #fff; background: #1769df;
+  align-items: center; text-align: center; font-size: 14px; }
+.roles button:disabled, .student:has(button:disabled) { opacity: .65; }
+.note { font-size: 12px; color: #7c8ba0; margin: 20px 0 0; }
+@media (max-width: 600px) { .card { padding: 20px; } .roles { grid-template-columns: 1fr; }
+  .student { grid-column: auto; grid-template-columns: 1fr; } }

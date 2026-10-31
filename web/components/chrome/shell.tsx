@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import type { User } from "../../lib/types";
 import { AppIcon, type AppIconName } from "./icons";
+import { sessionRoleName } from "./roles";
 import "./shell.css";
 
 interface NavigationItem {
@@ -23,10 +24,6 @@ const roleNavigation: Record<Exclude<User["role"], "teacher">, NavigationItem> =
   student: { view: "student", label: "我的学习反馈", icon: "student" },
   parent: { view: "parent", label: "孩子的学习反馈", icon: "parent" },
   admin: { view: "admin", label: "教学支持汇总", icon: "admin" },
-};
-
-const roleLabels: Record<User["role"], string> = {
-  teacher: "教师", student: "学生", parent: "家长", admin: "管理者",
 };
 
 export interface ShellProps {
@@ -66,7 +63,7 @@ export function Shell({ user, activeView, onNavigate, children, actions }: Shell
         <div className="header-context">
           <span className="environment-badge">演示环境</span>
           {user && <span className="header-user" title={user.id}>
-            <AppIcon name="user" size={18} />{roleLabels[user.role]}
+            <AppIcon name="user" size={18} />{sessionRoleName(user)}
           </span>}
           {actions && <div className="header-actions">{actions}</div>}
         </div>
